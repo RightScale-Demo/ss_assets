@@ -1,0 +1,4 @@
+# The files that need to be uploaded to Self-Service in the required dependency order
+
+https://github.com/rightscale/rightscale-plugins/blob/master/libraries/sys_log.rb
+https://github.com/rightscale/rightscale-plugins/blob/master/azure/rs_azure_template/rs_azure_template.rb
