@@ -26,7 +26,7 @@ mapping "map_cat" do {
     "cloud" => "EC2 us-east-1",
     "availiblity_zone" => "us-east-1a",
     "network" => "Demo-vpc",
-    "subnet" => "Demo-subnet-1a"
+    "subnet" => "Demo-subnet-1a",
     "rds_subnet_group" => "demo-subnet-group"
   },
   "script_info" => {
