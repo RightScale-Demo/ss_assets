@@ -27,6 +27,7 @@ mapping "map_cat" do {
     "availiblity_zone" => "us-east-1a",
     "network" => "Demo-vpc",
     "subnet" => "Demo-subnet-1a"
+    "rds_subnet_group" => "demo-subnet-group"
   },
   "script_info" => {
     "compose_script_href" => "/api/right_scripts/593001003",  # APP docker services compose
@@ -147,12 +148,12 @@ end
 
 resource "rds", type: "rs_aws_rds.db_instance" do
   availability_zone map($map_cat, "cloud_info", "availability_zone")
+  db_subnet_group_name map($map_cat, "cloud_info", "rds_subnet_group")   
   db_instance_class "db.t2.small"
   allocated_storage $param_db_size
   backup_retention_period "0" # Don't do backups
   db_instance_identifier join(["my-rds-", last(split(@@deployment.href, "/"))])
   db_name join(["mydb", last(split(@@deployment.href, "/"))])
-  db_subnet_group_name "demo-subnet-group"
   engine "mysql"
   engine_version "5.6.35" 
   master_username $param_db_username
