@@ -121,27 +121,6 @@ resource "sec_group_rule_ssh", type: "security_group_rule" do
   } end
 end  
 
-#resource "rds_sec_group", type: "security_group" do
-#  name join(["RdsSecGrp-",last(split(@@deployment.href,"/"))])
-#  description "RDS security group."
-#  cloud map($map_cat, "cloud_info", "cloud")
-#  network map($map_cat, "cloud_info", "network")
-#end
-#
-#resource "rds_sec_group_rule_3306", type: "security_group_rule" do
-#  name "RDS 3306 Rule"
-#  description "Allow access to RDS."
-#  security_group @rds_sec_group
-#  source_type "group"
-#  direction "ingress"
-#  group_owner cred("AWS_ACCOUNT_NUMBER")
-#  protocol "tcp"
-#  protocol_details do {
-#    "start_port" => "3306",
-#    "end_port" => "3306"
-#  } end
-#end 
-
 ### SSH Key ###
 resource "ssh_key", type: "ssh_key" do
   name join(["sshkey_", last(split(@@deployment.href,"/"))])
@@ -214,15 +193,6 @@ define launch_handler(@wordpress_docker_server, @rds, @ssh_key, @sec_group, @sec
   #provision secuirty group roles
   provision(@sec_group_rule_http)
   provision(@sec_group_rule_ssh)
-#  $rds_sg_rule = to_object(@rds_sec_group_rule_3306)
-#  $rds_sg_rule['fields']['group_name'] = @sec_group.resource_uid
-#  @rds_sec_group_rule_3306 = $rds_sg_rule
-#  provision(@rds_sec_group_rule_3306)
-#  
-#  # set security group for rds
-#  $rds = to_object(@rds)
-#  $rds["fields"]["db_security_group"] = @sec_group.resource_uid
-#  @rds = $rds
 
 #  concurrent return @rds, @wordpress_docker_server do
     provision(@rds)
