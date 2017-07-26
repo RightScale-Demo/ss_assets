@@ -10,7 +10,7 @@
 # Add bits to support creating and deleting the RDS security group.
 
 
-name 'WordPress Container with External RDS DB Server - Plugin'
+name 'WordPress Container with External RDS DB Server'
 rs_ca_ver 20161221
 short_description "![logo](https://s3.amazonaws.com/rs-pft/cat-logos/docker.png) ![logo](https://s3.amazonaws.com/rs-pft/cat-logos/amazon_rds_glossy.png) 
 
