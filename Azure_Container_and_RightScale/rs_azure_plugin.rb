@@ -268,6 +268,12 @@ plugin "rs_azure_containerservices" do
       verb "PUT"
     end
 
+    action "update" do
+      type "containerservice"
+      path "$href"
+      verb "PUT"
+    end
+
     action "list_keys" do
       path "$id/listKeys"
       verb "POST"

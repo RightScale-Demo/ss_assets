@@ -14,6 +14,35 @@ parameter "refresh_token" do
   type "string"
 end
 
+parameter "master_count" do
+  label "Master Count"
+  type "number"
+  default 1
+  allowed_values 1,3,5
+end
+
+parameter "agent_count" do
+  label "Agent Count"
+  type "number"
+  default 2
+end
+
+parameter "agent_size" do
+  label "Agent VM-Instance Size"
+  type "string"
+  default "Standard_DS2"
+  allowed_values "Standard_A0", "Standard_A1", "Standard_A2", "Standard_A3", "Standard_A4", "Standard_A5",
+    		"Standard_A6", "Standard_A7", "Standard_A8", "Standard_A9", "Standard_A10", "Standard_A11",
+    		"Standard_D1", "Standard_D2", "Standard_D3", "Standard_D4",
+    		"Standard_D11", "Standard_D12", "Standard_D13", "Standard_D14",
+    		"Standard_D1_v2", "Standard_D2_v2", "Standard_D3_v2", "Standard_D4_v2", "Standard_D5_v2",
+    		"Standard_D11_v2", "Standard_D12_v2", "Standard_D13_v2", "Standard_D14_v2",
+    		"Standard_G1", "Standard_G2", "Standard_G3", "Standard_G4", "Standard_G5",
+    		"Standard_DS1", "Standard_DS2", "Standard_DS3", "Standard_DS4",
+    		"Standard_DS11", "Standard_DS12", "Standard_DS13", "Standard_DS14",
+    		"Standard_GS1", "Standard_GS2", "Standard_GS3", "Standard_GS4", "Standard_GS5"
+end
+
 permission "read_creds" do
   actions   "rs_cm.show_sensitive","rs_cm.index_sensitive"
   resources "rs_cm.credentials"
@@ -25,8 +54,9 @@ resource "my_resource_group", type: "rs_cm.resource_group" do
   description join(["container resource group for ", @@deployment.name])
 end
 
-# https://github.com/Azure/azure-quickstart-templates/tree/master/101-acs-dcos
-# https://github.com/Azure/azure-quickstart-templates/blob/master/101-acs-dcos/azuredeploy.parameters.json
+# https://docs.microsoft.com/en-us/azure/container-service/kubernetes/container-service-kubernetes-walkthrough
+# https://github.com/Azure/azure-quickstart-templates/blob/master/101-acs-kubernetes/azuredeploy.json
+# https://github.com/Azure/azure-quickstart-templates/blob/master/101-acs-kubernetes/azuredeploy.parameters.json
 resource "my_container", type: "rs_azure_containerservices.containerservice" do
   name join(["myc", last(split(@@deployment.href, "/"))])
   resource_group @my_resource_group.name
@@ -40,14 +70,14 @@ resource "my_container", type: "rs_azure_containerservices.containerservice" do
       "secret" => cred("AZURE_APPLICATION_KEY")
     },
     "masterProfile" => {
-      "count" =>  "1",
+      "count" =>  $master_count,
       "dnsPrefix" =>  join([@@deployment.name, "-master"])
     },
     "agentPoolProfiles" =>  [
       {
         "name" =>  "agentpools",
-        "count" =>  "2",
-        "vmSize" =>  "Standard_DS2",
+        "count" =>  $agent_count,
+        "vmSize" =>  $agent_size,
         "dnsPrefix" =>  join([@@deployment.name, "-agent"])
       }
     ],
@@ -91,6 +121,72 @@ operation "launch" do
  definition "launch_handler"
 end
 
+operation "terminate" do
+  description "terminate"
+  definition "delete_handler"
+end
+
+operation "scale" do
+  description "Scale the agents"
+  definition "scale_up"
+end
+
+define scale_up(@my_container,@rightlink_vm_extension,$agent_count,$master_count) return @my_container do
+  sub on_error: stop_debugging() do
+    @container = @my_container.get()
+    $object = to_object(@my_container)
+    call sys_log.detail("object:" + to_s($object)+"\n")
+    $fields = $object["details"][0]
+    call sys_log.detail("fields:" + to_s($fields) + "\n")
+    $new_fields={}
+    $new_fields["location"]=$fields["location"]
+    $new_fields["name"]=$fields["name"]
+    $new_fields["properties"]=$fields["properties"]
+    $new_fields["id"]=$fields["id"]
+    $new_fields["properties"]["masterProfile"]["count"] = $master_count
+    $new_fields["properties"]["agentPoolProfiles"][0]["count"] = $agent_count
+    call sys_log.detail("new_fields:" + to_s($new_fields) + "\n")
+    call start_debugging()
+    @new_container = @container.update($new_fields)
+    call stop_debugging()
+    $resource_group = split($fields["id"], '/')[4]
+    call start_debugging()
+    $status = @new_container.get().state
+    call sys_log.detail(join(["container:", to_s(to_object(@new_container)),"\n"]))
+    call sys_log.detail(join(["Status: ", $status]))
+    sub on_error: skip, timeout: 60m do
+      while $status != "Succeeded" do
+        $status = @new_container.state
+        call stop_debugging()
+        call sys_log.detail(join(["Status: ", $status]))
+        call start_debugging()
+        sleep(10)
+      end
+    end
+    call stop_debugging()
+    call get_instance_count() retrieve $ic_count
+    while $ic_count < ($agent_count+$master_count) do
+      call sys_log.detail(join(["instance_count:", $ic_count, " expected_count:", to_s($agent_count+$master_count)]))
+      sleep(10)
+      call get_instance_count() retrieve $ic_count
+    end
+    call rl_and_docker(@rightlink_vm_extension)
+    @my_container = @new_container
+  end
+end
+
+define get_instance_count() return $ic_count do
+  @servers = rs_cm.instances.get(filter: ["deployment_href=="+@@deployment.href])
+  $ic_count=0
+  @@st = rs_cm.server_template.empty()
+  sub on_error: skip do
+    @@st = @server.server_template()
+  end
+  if empty?(@@st)
+   $ic_count = $ic_count + 1
+  end
+end
+
 define run_rightscript_by_name(@target, $script_name) do
   @script = rs_cm.right_scripts.index(latest_only: true, filter: [join(["name==", $script_name])])
   @task = @target.run_executable(right_script_href: @script.href )
@@ -100,25 +196,48 @@ define run_rightscript_by_name(@target, $script_name) do
   end
 end
 
-define launch_handler(@my_resource_group,@my_container,@rightlink_vm_extension) return @my_resource_group,@my_container do
+define launch_handler(@my_resource_group,@my_container,@rightlink_vm_extension) return @my_resource_group,@my_container,@rightlink_vm_extension do
   call start_debugging()
   provision(@my_resource_group)
   provision(@my_container)
-  @servers = rs_cm.instances.get(filter: ["deployment_href=="+@@deployment.href])
-  task_label("Adding rightlink")
-  $counter=0
-  foreach @server in @servers do
-    $name = @server.name
-    $vme = to_object(@rightlink_vm_extension)
-    $vme["fields"]["virtualMachineName"] = to_s($name)
-    @vme = $vme
-    provision(@vme)
+  call rl_and_docker(@rightlink_vm_extension)
+  if $$debugging != false
+    call stop_debugging()
   end
-  task_label("enable docker")
+end
+
+define rl_and_docker(@rightlink_vm_extension) do
+  @servers = unique(rs_cm.instances.get(filter: ["deployment_href=="+@@deployment.href]))
   foreach @server in @servers do
-    call run_rightscript_by_name(@server, "RL10 Linux Enable Docker Support (Beta)")
+    call sys_log.detail(join(["entering for:", @server.name]))
+    task_label("Adding rightlink")
+    @@st = rs_cm.server_template.empty()
+    sub on_error: skip do
+      @@st = @server.server_template()
+    end
+    if empty?(@@st)
+      call sys_log.detail(join(["entering empty:", @server.name, '-', @server.state]))
+      while @server.state != 'running' do
+        call sys_log.detail(join([@server.name,"-",@server.state]))
+        sleep(10)
+      end
+      $name = @server.name
+      $vme = to_object(@rightlink_vm_extension)
+      $vme["fields"]["virtualMachineName"] = to_s($name)
+      @vme = $vme
+      provision(@vme)
+      while @server.state != 'operational' do
+        call sys_log.detail(join([@server.name,"-",@server.state]))
+        sleep(10)
+      end 
+      call run_rightscript_by_name(@server, "RL10 Linux Enable Docker Support (Beta)")
+    end
   end
-  call stop_debugging()
+end
+
+define delete_handler(@my_resource_group,@my_container,@rightlink_vm_extension) do
+  delete(@my_container)
+  delete(@my_resource_group)
 end
 
 define start_debugging() do
