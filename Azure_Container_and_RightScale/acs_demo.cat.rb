@@ -131,12 +131,14 @@ operation "scale" do
   definition "scale_up"
 end
 
-define scale_up(@my_container,@rightlink_vm_extension,$agent_count,$master_count) return @my_container do
+define scale_up(@my_container,@rightlink_vm_extension,$agent_count,$master_count,$refresh_token) return @my_container do
   sub on_error: stop_debugging() do
     @container = @my_container.get()
     $object = to_object(@my_container)
     call sys_log.detail("object:" + to_s($object)+"\n")
     $fields = $object["details"][0]
+    $old_master_count=$fields["properties"]["masterProfile"]["count"]
+    $old_agent_count=$fields["properties"]["agentPoolProfiles"][0]["count"]
     call sys_log.detail("fields:" + to_s($fields) + "\n")
     $new_fields={}
     $new_fields["location"]=$fields["location"]
@@ -165,12 +167,59 @@ define scale_up(@my_container,@rightlink_vm_extension,$agent_count,$master_count
     end
     call stop_debugging()
     call get_instance_count() retrieve $ic_count
-    while $ic_count < ($agent_count+$master_count) do
-      call sys_log.detail(join(["instance_count:", $ic_count, " expected_count:", to_s($agent_count+$master_count)]))
+    while $ic_count < (($agent_count-$old_agent_count)+($master_count-$old_master_count)) do
+      call sys_log.detail(join(["instance_count:", $ic_count, " expected_count:", to_s((($agent_count-$old_agent_count)+($master_count-$old_master_count)))]))
       sleep(10)
       call get_instance_count() retrieve $ic_count
     end
-    call rl_and_docker(@rightlink_vm_extension)
+    @servers = rs_cm.instances.get(filter: ["deployment_href=="+@@deployment.href])
+    foreach @server in @servers do
+      call sys_log.detail(join(["entering for:", @server.name]))
+      task_label("Adding rightlink")
+      @@st = rs_cm.server_template.empty()
+      sub on_error: skip do
+        @@st = @server.server_template()
+      end
+      if empty?(@@st)
+        call sys_log.detail(join(["entering empty:", @server.name, '-', @server.state]))
+        while @server.state != 'running' do
+          call sys_log.detail(join([@server.name,"-",@server.state]))
+          sleep(10)
+        end
+        $fields={}
+        $fields["name"] = join(["rightlink-", last(split(@@deployment.href, "/"))])
+        $fields["resource_group"] = @@deployment.name
+        $fields["location"] = "Central US"
+        $fields["virtualMachineName"] = @server.name
+        $fields["properties"] = {}
+        $fields["properties"]["publisher"] = "Microsoft.OSTCExtensions"
+        $fields["properties"]["type"] = "CustomScriptForLinux"
+        $fields["properties"]["typeHandlerVersion"] = "1.5"
+        $fields["properties"]["autoUpgradeMinorVersion"] = true
+        $fields["properties"]["settings"] = {}
+        $fields["properties"]["settings"]["fileUris"] = [ "https://rightlink.rightscale.com/rll/10.6.0/rightlink.enable.sh" ]
+        $fields["properties"]["settings"]["commandToExecute"] = join(['./rightlink.enable.sh -k "', $refresh_token,'" -t "RightLink 10.6.0 Linux Base" -d "',@@deployment.name,'" -c "azure_v2"'])
+        call start_debugging()
+        @vme=rs_azure_compute.extensions.create($fields)
+        @new_resource = @vme.show(resource_group: @@deployment.name, virtualMachineName: @server.name, name: join(["rightlink-", last(split(@@deployment.href, "/"))]))
+        $status = @new_resource.state
+        while $status != "Succeeded" do
+          call sys_log.detail(join([@server.name,"-VME-",$status]))
+          $status = @new_resource.state
+          if $status == "Failed"
+            call stop_debugging()
+            raise "Execution Name: "+ @@deployment.name + ", Status: " + $status + ", VirtualMachine: " + @server.name
+          end
+          sleep(30)
+        end
+        @vme = @new_resource.show(resource_group: @@deployment.name, virtualMachineName: @server.name, name: join(["rightlink-", last(split(@@deployment.href, "/"))]))
+        while @server.state != 'operational' do
+          call sys_log.detail(join([@server.name,"-",@server.state]))
+          sleep(10)
+        end 
+        call run_rightscript_by_name(@server, "RL10 Linux Enable Docker Support (Beta)")
+      end
+    end
     @my_container = @new_container
   end
 end
@@ -178,12 +227,14 @@ end
 define get_instance_count() return $ic_count do
   @servers = rs_cm.instances.get(filter: ["deployment_href=="+@@deployment.href])
   $ic_count=0
-  @@st = rs_cm.server_template.empty()
-  sub on_error: skip do
-    @@st = @server.server_template()
-  end
-  if empty?(@@st)
-   $ic_count = $ic_count + 1
+  foreach @server in @servers do
+    @@st = rs_cm.server_template.empty()
+    sub on_error: skip do
+      @@st = @server.server_template()
+    end
+    if empty?(@@st)
+     $ic_count = $ic_count + 1
+    end
   end
 end
 
@@ -201,13 +252,14 @@ define launch_handler(@my_resource_group,@my_container,@rightlink_vm_extension) 
   provision(@my_resource_group)
   provision(@my_container)
   call rl_and_docker(@rightlink_vm_extension)
+  @rightlink_vm_extension=@rightlink_vm_extension
   if $$debugging != false
     call stop_debugging()
   end
 end
 
 define rl_and_docker(@rightlink_vm_extension) do
-  @servers = unique(rs_cm.instances.get(filter: ["deployment_href=="+@@deployment.href]))
+  @servers = rs_cm.instances.get(filter: ["deployment_href=="+@@deployment.href])
   foreach @server in @servers do
     call sys_log.detail(join(["entering for:", @server.name]))
     task_label("Adding rightlink")
@@ -223,6 +275,7 @@ define rl_and_docker(@rightlink_vm_extension) do
       end
       $name = @server.name
       $vme = to_object(@rightlink_vm_extension)
+      call sys_log.detail(join(["vme:",to_s($vme)]))
       $vme["fields"]["virtualMachineName"] = to_s($name)
       @vme = $vme
       provision(@vme)
