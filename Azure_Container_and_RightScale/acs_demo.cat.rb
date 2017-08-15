@@ -6,7 +6,6 @@ import "plugins/rs_azure"
 
 parameter "subscription_id" do
   like $rs_azure.subscription_id
-  default "8beb7791-9302-4ae4-97b4-afd482aadc59"
 end
 
 parameter "refresh_token" do
