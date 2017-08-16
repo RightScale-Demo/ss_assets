@@ -64,7 +64,6 @@ end
 # Replace with desired outputs
 output "out_clusterendpoint" do
   label "RedShift Cluster Endpoint"
-  default_value @stack.OutputValue
 end
 
 resource "stack", type: "rs_aws_cft.stack" do
@@ -81,4 +80,16 @@ resource "stack", type: "rs_aws_cft.stack" do
   parameter_4_value $masteruserpassword
   parameter_5_name "ClusterType"
   parameter_5_value switch(equals?($numberofnodes, 1), "single-node", "multi-node")
+end
+
+# OPERATIONS
+operation "enable" do
+  definition "post_launch"
+  output_mappings do {
+    $out_clusterendpoint => $clusterendpoint
+  } end
+end
+
+define post_launch(@stack) return $clusterendpoint do
+   $clusterendpoint = @stack.OutputValue[0]
 end
