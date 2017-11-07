@@ -213,7 +213,10 @@ define launch_handler(@wordpress_docker_server, @rds, @ssh_key, @sec_group, @sec
 
   $right_script_href = map($map_cat, "script_info", "services_up_script_href")
   @tasks = @wordpress_docker_server.current_instance().run_executable(right_script_href: $right_script_href)
-    
+   
+  # AWS can be a bit slow to report the public IP address sometimes. 
+  # So wait for it before assigning it for the output. 
+  sleep_until(@wordpress_docker_server.current_instance().public_ip_addresses[0])
   $wordpress_server_address = @wordpress_docker_server.current_instance().public_ip_addresses[0]
   $wordpress_link = join(["http://",$wordpress_server_address,":8080"])
     
@@ -234,10 +237,8 @@ end
 
 define termination_handler(@wordpress_docker_server, @rds, @ssh_key, @sec_group, @sec_group_rule_http, @sec_group_rule_ssh)  return @wordpress_docker_server, @rds, @ssh_key, @sec_group_rule_http, @sec_group_rule_ssh, @sec_group do 
 
-  concurrent return @rds, @wordpress_docker_server do
-    delete(@rds)
-    delete(@wordpress_docker_server)
-  end
+  delete(@rds)
+  delete(@wordpress_docker_server)
   
   concurrent return @ssh_key, @sec_group_rule_http, @sec_group_rule_ssh do
     delete(@ssh_key)
