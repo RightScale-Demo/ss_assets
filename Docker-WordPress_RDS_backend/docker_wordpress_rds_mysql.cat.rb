@@ -195,10 +195,10 @@ define launch_handler(@wordpress_docker_server, @rds, @ssh_key, @sec_group, @sec
   provision(@sec_group_rule_http)
   provision(@sec_group_rule_ssh)
 
-#  concurrent return @rds, @wordpress_docker_server do
+  concurrent return @rds, @wordpress_docker_server do
     provision(@rds)
     provision(@wordpress_docker_server)
-#  end
+  end
   
   # configure the docker wordpress environment variables to point at the DB server
   $docker_env = "wordpress:\n   WORDPRESS_DB_HOST: " + @rds.endpoint_address + "\n   WORDPRESS_DB_USER: "+ $param_db_username + "\n   WORDPRESS_DB_PASSWORD: " + $param_db_password  # + "\n" #  WORDPRESS_DB_NAME: dwp_rds_db"
