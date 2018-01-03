@@ -1,6 +1,9 @@
 name "SAP-HANA New VPC CFT Package"
 rs_ca_ver 20161221
-short_description  "Package with SAP-HANA CFT Stack decalaration."
+short_description  "SAP-HANA New VPC CFT Stack declaration."
+long_description "Uses CFT plugin to launch the SAP-HANA \"New VPC\" CFT stack.
+See the following link for more information on this and related CFTs:
+https://docs.aws.amazon.com/quickstart/latest/sap-hana/welcome.html"
 
 package "cft/sap_hana_newvpc"
 
@@ -21,7 +24,7 @@ end
 
 #### CFT Stack Section ####
 # Currently using the CFT that creates the VPCs, etc.
-# TO-DO: Use the CFT that prompts for the VPCs, etc and/or create the VPCs, etc using CAT resource decalarations.
+# TO-DO: Use the CFT that prompts for the VPCs, etc and/or create the VPCs, etc using CAT resource declarations.
 resource "stack", type: "rs_aws_cft.stack" do
   stack_name join(["saphana-", last(split(@@deployment.href, "/"))])
   template_url "https://s3.amazonaws.com/sap-hana-demo/SAP-HANA-NewVPC.template"
@@ -52,6 +55,7 @@ resource "stack", type: "rs_aws_cft.stack" do
   parameter_21_name "SAPInstanceNum"
   parameter_22_name "HANAMasterPass"
   parameter_23_name "VolumeType"
+  parameter_24_name "InstallRDPInstance"
   parameter_3_value $vpccidr
   parameter_4_value $hanainstallmedia
   parameter_5_value $availabilityzone
@@ -73,6 +77,7 @@ resource "stack", type: "rs_aws_cft.stack" do
   parameter_21_value $sapinstancenum
   parameter_22_value $hanamasterpass
   parameter_23_value $volumetype
+  parameter_24_value $installrdpinstance
 end
 
 ## Parameters being passed to CFT
@@ -257,15 +262,14 @@ end
 ##            "m4.xlarge"
 ##        ]
 ##    },
-##    "InstallRDPInstance": {
-##        "Type": "String",
-##        "Description": "Install (Yes) or don't install (No) optional Windows RDP instance.",
-##        "Default": "No",
-##        "AllowedValues": [
-##            "Yes",
-##            "No"
-##        ]
-##    },
+
+parameter "installrdpinstance" do
+    label "InstallRDPInstance"
+    type "string"
+    description "Install (Yes) or don't install (No) optional Windows RDP instance."
+    default "No"
+    allowed_values "Yes", "No"
+end
 
 parameter "installhana"  do
     label "InstallHANA"
