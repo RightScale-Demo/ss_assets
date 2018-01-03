@@ -3,10 +3,8 @@
 #
 # Provides definitions to apply user-data for RightLink enablement to raw instances in AWS.
 #
-# PREREQUISITES
-# 
-
-
+# CAVEATS AND PREREQUISITES
+# - Only tested with Linux Servers
 
 name "AWS RightLink Enablement Package"
 rs_ca_ver 20161221
@@ -16,54 +14,60 @@ Requires cloud-init to be pre-installed on the raw instances."
 
 package "rl_enable/aws"
 
-# Used to output debug info
+# Helpers
 import "pft/err_utilities", as: "debug"
+import "pft/server_templates_utilities"
 
 # Orchestrate the RightLink enablement process.
 # Inputs:
 #   @instances - collection of one or more instances
+#   server_type - "Windows" or "Linux" - drives the RL enablement script to use.
 #   server_template_name - name of the ServerTemplate to use when wrapping the instance(s).
 # Processing:
 #   Stops instances.
 #   Injects user-data that runs RightLink enablement script.
 #   Starts instances.
-define rightlink_enable(@instances, $server_template_name) do
+define rightlink_enable(@instances, $server_type, $server_template_name) do
+  
+  # Before doing anything, wait to make sure the instances are operational
+  # We don't want to try to stop instances that are not in a stoppable state yet.
+  $wake_condition = "/^(operational)$/"
+  sleep_until all?(@instances.state[], $wake_condition)
    
- # Record instance related data used to find the stopped instances later.
- $num_instances = size(@instances)
- $instance_uids = @instances.resource_uid[]
- @cloud = first(@instances.cloud())
-
- # Stop the instances
- @instances.stop()
- 
- # Once the instances are stopped they get new HREFs ("next instance"), 
- # So, we need to so look for the instance check the state until stopped (i.e. provisioned)
- @stopped_instances = rs_cm.instances.empty()
- while size(@stopped_instances) != $num_instances do 
-   # sleep a bit
-   sleep(15)
- 
-   @stopped_instances = rs_cm.instances.empty()
-   foreach $uid in $instance_uids do
-     @instance = @cloud.instances(filter: ["resource_uid=="+$uid])
-     if @instance.state == "provisioned"
-       @stopped_instances = @stopped_instances + @instance
-     end
-   end
- end
+  # Record instance related data used to find the stopped instances later.
+  $num_instances = size(@instances)
+  $instance_uids = @instances.resource_uid[]
+  @cloud = first(@instances.cloud())
+  
+  # Stop the instances
+  @instances.stop()
      
- # Now install userdata that runs RL enablement code
- foreach @instance in @stopped_instances do
-   call install_rl_installscript(@instance, $server_template_name, switch(@instance.name==null, @instance.resource_uid, @instance.name))
- end
- 
- # Once the user-data is set, start the instance so RL enablement will be run
- call debug.log("starting instances", to_s(to_object(@stopped_instances)))
- @stopped_instances.start()
+  # Once the instances are stopped they get new HREFs ("next instance"), 
+  # So, we need to so look for the instance check the state until stopped (i.e. provisioned)
+  @stopped_instances = rs_cm.instances.empty()
+  while size(@stopped_instances) != $num_instances do 
+    # sleep a bit
+    sleep(15)
+    @stopped_instances = rs_cm.instances.empty()
+    foreach $uid in $instance_uids do
+      @instance = @cloud.instances(filter: ["resource_uid=="+$uid])
+      if @instance.state == "provisioned"
+        @stopped_instances = @stopped_instances + @instance
+        end
+    end
+  end
+       
+  # Now install userdata that runs RL enablement code
+  foreach @instance in @stopped_instances do
+    call install_rl_installscript(@instance, $server_type, $server_template_name, switch(@instance.name==null, @instance.resource_uid, @instance.name))
+  end
    
- $wake_condition = "/^(operational|stranded|stranded in booting)$/"
- sleep_until all?(@stopped_instances.state[], $wake_condition)
+  # Once the user-data is set, start the instance so RL enablement will be run
+  call debug.log("starting instances", to_s(to_object(@stopped_instances)))
+  @stopped_instances.start()
+       
+  $wake_condition = "/^(operational|stranded|stranded in booting)$/"
+  sleep_until all?(@stopped_instances.state[], $wake_condition)
 
 end
 

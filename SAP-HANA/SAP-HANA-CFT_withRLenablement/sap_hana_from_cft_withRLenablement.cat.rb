@@ -34,6 +34,69 @@ resource "stack", type: "rs_aws_cft.stack" do
   like @sap_hana_newvpc.stack
 end
 
+operation "enable" do
+  definition "post_launch"
+end
+
+operation "terminate" do
+  definition "terminator"
+end
+
+# Now RightLink enable each of the instances that make up the SAP-HANA stack - including the Bastion node.
+# The SAP-HANA nodes can be found based on the placement group
+define post_launch(@placement_group)  do
+  
+  call gather_cluster_instances(@placement_group) retrieve @cluster_instances
+  
+  # Now that we have the collection of instances, let's get them RightLink Enabled 
+  call rl_enable.rightlink_enable(@cluster_instances, "SAP-HANA Wrapper")
+end
+
+# coordinate termination
+define terminator(@stack, @placement_group) return @stack, @placement_group do
+  
+  call gather_cluster_instances(@placement_group) retrieve @instances
+  
+  delete(@stack)
+  
+  sleep_until all?(@instances.state[], "terminated")
+    
+  delete(@placement_group)
+end
+
+# Find the instances that are part of the SAP stack
+define gather_cluster_instances(@placement_group) return @cluster_instances do
+
+  # Get the cloud resource
+  @cloud = @placement_group.cloud()
+  
+  # Find the SAP-HANA instances
+  # They are all part of the same placement group.
+  @sap_hana_instances = @cloud.instances(filter: ["placement_group_href=="+@placement_group.href], view: "extended")
+  
+  # Gather up networking data that will be used to identify the correct Bastion Server that is part of this system.
+  @subnet = rs_cm.get(href: @sap_hana_instances.subnets[0]["href"])
+  $network_href = @subnet.network().href
+    
+  # The Bastion server name is fixed by the off-the-shelf CFT. 
+  # So this may return multiple instances - including terminated ones
+  # So we need to find the one on the correct network.
+  @bastion_instance = rs_cm.instances.empty()
+  @instances = @cloud.instances(filter: ["name==Bastion Instance (Public Subnet)"], view: "extended")
+  foreach @instance in @instances do
+    if (@instance.state == "operational") 
+      @instance_subnet = rs_cm.get(href: @instance.subnets[0]["href"])
+      if (@instance_subnet.network().href == $network_href)
+        @bastion_instance = @instance
+      end
+    end
+  end
+    
+  @cluster_instances = @sap_hana_instances + @bastion_instance
+
+end
+
+
 ## Parameters being passed to CFT
 parameter "vpccidr" do
   like $sap_hana_newvpc.vpccidr
@@ -96,6 +159,10 @@ parameter "myinstancetype"  do
   like $sap_hana_newvpc.myinstancetype
 end
 
+parameter "installrdpinstance" do
+  like $sap_hana_newvpc.installrdpinstance
+end
+
 parameter "installhana"  do
   like $sap_hana_newvpc.installhana
 end
@@ -118,66 +185,4 @@ end
 
 parameter "volumetype"  do
   like $sap_hana_newvpc.volumetype
-end
-
-operation "enable" do
-  definition "post_launch"
-end
-
-operation "terminate" do
-  definition "terminator"
-end
-
-# Now RightLink enable each of the instances that make up the SAP-HANA stack - including the Bastion node.
-# The SAP-HANA nodes can be found based on the placement group
-define post_launch(@placement_group)  do
-  
-  call gather_cluster_instances(@placement_group) retrieve @cluster_instances
-  
-  # Now that we have the collection of instances, let's get them RightLink Enabled 
-  call rl_enable.rightlink_enable(@cluster_instances, "SAP-HANA Wrapper")
-end
-
-# coordinate termination
-define terminator(@stack, @placement_group) return @stack, @placement_group do
-  
-  call gather_cluster_instances(@placement_group) retrieve @instances
-  
-  delete(@stack)
-  
-  sleep_until all?(@instances.state[], "terminated")
-    
-  delete(@placement_group)
-end
-
-# Find the instances that are part of the SAP stack
-define gather_cluster_instances(@placement_group) return @cluster_instances do
-
-  # Get the cloud resource
-  @cloud = @placement_group.cloud()
-  
-  # Find the SAP-HANA instances
-  # They are all part of the same placement group.
-  @sap_hana_instances = @cloud.instances(filter: ["placement_group_href=="+@placement_group.href], view: "extended")
-  
-  # Gather up networking data that will be used to identify the correct Bastion Server that is part of this system.
-  @subnet = rs_cm.get(href: @sap_hana_instances.subnets[0]["href"])
-  $network_href = @subnet.network().href
-    
-  # The Bastion server name is fixed by the off-the-shelf CFT. 
-  # So this may return multiple instances - including terminated ones
-  # So we need to find the one on the correct network.
-  @bastion_instance = rs_cm.instances.empty()
-  @instances = @cloud.instances(filter: ["name==Bastion Instance (Public Subnet)"], view: "extended")
-  foreach @instance in @instances do
-    if (@instance.state == "operational") 
-      @instance_subnet = rs_cm.get(href: @instance.subnets[0]["href"])
-      if (@instance_subnet.network().href == $network_href)
-        @bastion_instance = @instance
-      end
-    end
-  end
-    
-  @cluster_instances = @sap_hana_instances + @bastion_instance
-
 end
