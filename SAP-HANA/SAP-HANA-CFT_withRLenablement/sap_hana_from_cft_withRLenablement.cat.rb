@@ -42,27 +42,41 @@ operation "terminate" do
   definition "terminator"
 end
 
+operation "stop" do
+  definition "stopper"
+end
+
+operation "start" do
+  definition "starter"
+end
+
 # Now RightLink enable each of the instances that make up the SAP-HANA stack - including the Bastion node.
 # The SAP-HANA nodes can be found based on the placement group
 define post_launch(@placement_group)  do
-  
   call gather_cluster_instances(@placement_group) retrieve @cluster_instances
-  
   # Now that we have the collection of instances, let's get them RightLink Enabled 
   call rl_enable.rightlink_enable(@cluster_instances, "SAP-HANA Wrapper")
 end
 
-# coordinate termination
-define terminator(@stack, @placement_group) return @stack, @placement_group do
-  
-  call gather_cluster_instances(@placement_group) retrieve @instances
-  
-  delete(@stack)
-  
-  sleep_until all?(@instances.state[], "terminated")
-    
-  delete(@placement_group)
+# Coordinate termination of the now existent servers
+# The stack, placement group, etc will be terminated automatically once this returns.
+define terminator() do
+  # Concurrently terminate all the servers
+  concurrent foreach @server in @@deployment.servers() do
+    delete(@server)
+  end
 end
+
+define stopper() do
+  @instances = @@deployment.servers().current_instances()
+  call rl_enable.stop_instances(@instances) retrieve @stopped_instances
+end
+
+define starter() do
+  @instances = @@deployment.servers().current_instances()
+  call rl_enable.start_instances(@instances) 
+end
+  
 
 # Find the instances that are part of the SAP stack
 define gather_cluster_instances(@placement_group) return @cluster_instances do

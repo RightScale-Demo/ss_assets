@@ -3,8 +3,8 @@
 #
 # Provides definitions to apply user-data for RightLink enablement to raw instances in AWS.
 #
-# CAVEATS AND PREREQUISITES
-# - Only tested with Linux Servers
+# CAVEATS 
+# - Only works for Linux Servers
 
 name "AWS RightLink Enablement Package"
 rs_ca_ver 20161221
@@ -27,7 +27,7 @@ import "pft/server_templates_utilities"
 #   Stops instances.
 #   Injects user-data that runs RightLink enablement script.
 #   Starts instances.
-define rightlink_enable(@instances, $server_type, $server_template_name) do
+define rightlink_enable(@instances, $server_template_name) do
   
   # Before doing anything, wait to make sure the instances are operational
   # We don't want to try to stop instances that are not in a stoppable state yet.
@@ -39,11 +39,26 @@ define rightlink_enable(@instances, $server_type, $server_template_name) do
   $instance_uids = @instances.resource_uid[]
   @cloud = first(@instances.cloud())
   
+  call stop_instances(@instances) retrieve @stopped_instances
+       
+  # Now install userdata that runs RL enablement code
+  foreach @instance in @stopped_instances do
+    call install_rl_installscript(@instance, $server_template_name, switch(@instance.name==null, @instance.resource_uid, @instance.name))
+  end
+   
+  # Once the user-data is set, start the instance so RL enablement will be run
+  call debug.log("starting instances", to_s(to_object(@stopped_instances)))
+    
+  call start_instances(@stopped_instances)
+
+end
+
+define stop_instances(@instances) return @stopped_instances do
   # Stop the instances
   @instances.stop()
      
   # Once the instances are stopped they get new HREFs ("next instance"), 
-  # So, we need to so look for the instance check the state until stopped (i.e. provisioned)
+  # So, we need to look for the instance check the state until stopped (i.e. provisioned)
   @stopped_instances = rs_cm.instances.empty()
   while size(@stopped_instances) != $num_instances do 
     # sleep a bit
@@ -53,24 +68,18 @@ define rightlink_enable(@instances, $server_type, $server_template_name) do
       @instance = @cloud.instances(filter: ["resource_uid=="+$uid])
       if @instance.state == "provisioned"
         @stopped_instances = @stopped_instances + @instance
-        end
+      end
     end
   end
-       
-  # Now install userdata that runs RL enablement code
-  foreach @instance in @stopped_instances do
-    call install_rl_installscript(@instance, $server_type, $server_template_name, switch(@instance.name==null, @instance.resource_uid, @instance.name))
-  end
-   
-  # Once the user-data is set, start the instance so RL enablement will be run
-  call debug.log("starting instances", to_s(to_object(@stopped_instances)))
+end
+
+define start_instances(@stopped_instances) do
   @stopped_instances.start()
        
   $wake_condition = "/^(operational|stranded|stranded in booting)$/"
   sleep_until all?(@stopped_instances.state[], $wake_condition)
-
 end
-
+  
 # Uses EC2 ModifyInstanceAttribute API to install user data that runs RL enablement script
 define install_rl_installscript(@instance, $server_template, $servername) do
  
