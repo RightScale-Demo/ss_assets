@@ -33,11 +33,7 @@ define rightlink_enable(@instances, $server_template_name) do
   # We don't want to try to stop instances that are not in a stoppable state yet.
   $wake_condition = "/^(operational)$/"
   sleep_until all?(@instances.state[], $wake_condition)
-   
-  # Record instance related data used to find the stopped instances later.
-  $num_instances = size(@instances)
-  $instance_uids = @instances.resource_uid[]
-  @cloud = first(@instances.cloud())
+
   
   call stop_instances(@instances) retrieve @stopped_instances
        
@@ -54,6 +50,12 @@ define rightlink_enable(@instances, $server_template_name) do
 end
 
 define stop_instances(@instances) return @stopped_instances do
+  
+  # Record instance related data used to find the stopped instances later.
+  $num_instances = size(@instances)
+  $instance_uids = @instances.resource_uid[]
+  @cloud = first(@instances.cloud())
+    
   # Stop the instances
   @instances.stop()
      
