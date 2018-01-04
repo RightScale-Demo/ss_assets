@@ -27,6 +27,7 @@ How to do all this is an exercise left to the reader.
   - pft/err_utilities - https://github.com/rs-services/rs-premium_free_trial/blob/master/CATs/library/lib_util_err.pkg.rb
   - syslog - https://github.com/rightscale/rightscale-plugins/blob/master/libraries/sys_log.rb
   - plugins/rs_aws_cft - https://github.com/rightscale/rightscale-plugins/blob/master/aws/rs_aws_cft/aws_cft_plugin.rb
+    - Requires version 1.3 or later of the plugin.
   - rl_enable/aws - https://github.com/RightScale-Demo/ss_assets/blob/master/shared/aws_rightlink_enablement/aws_rightlink_enablement.pkg.rb
   - cft/sap_hana_newvpc - https://github.com/RightScale-Demo/ss_assets/blob/master/SAP-HANA/SAP-HANA-CFT_withRLenablement/sap_hana_cft_stack_newVPC.pkg.rb
   - CAT: SAP-HANA - Launched by CFT and RightLink Enabled - https://github.com/RightScale-Demo/ss_assets/blob/master/SAP-HANA/SAP-HANA-CFT_withRLenablement/sap_hana_from_cft_withRLenablement.cat.rb
