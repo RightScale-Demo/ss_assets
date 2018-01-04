@@ -8,13 +8,12 @@ import "rl_enable/aws", as: "rl_enable"
 
 import "plugins/rs_aws_cft"
 
-output "output_ip_address" do
-  label "IP Address"
+output "output_bastion_ip" do
+  label "Bastion Server IP Address"
 end
 
-output "ssh_key" do
-  label "SSH Key"
-  default_value @ssh_key.name
+output "output_hana_master_ip" do
+  label "SAP HANA Master Server IP Address"
 end
 
 ### resource declarations ###
@@ -36,6 +35,10 @@ end
 
 operation "enable" do
   definition "post_launch"
+  output_mappings do {
+    $output_bastion_ip => $bastion_ip,
+    $output_hana_master_ip => $hana_master_ip
+  } end
 end
 
 operation "terminate" do
@@ -52,10 +55,25 @@ end
 
 # Now RightLink enable each of the instances that make up the SAP-HANA stack - including the Bastion node.
 # The SAP-HANA nodes can be found based on the placement group
-define post_launch(@placement_group)  do
+define post_launch(@placement_group) return $bastion_ip, $hana_master_ip do
   call gather_cluster_instances(@placement_group) retrieve @cluster_instances
   # Now that we have the collection of instances, let's get them RightLink Enabled 
-  call rl_enable.rightlink_enable(@cluster_instances, "SAP-HANA Wrapper")
+  call rl_enable.rightlink_enable(@cluster_instances, "SAP-HANA Wrapper", "PFT_RS_REFRESH_TOKEN")
+  
+  @bastion_server = rs_cm.servers.get(filter: ["deployment_href=="+@@deployment.href, "name==Bastion"])
+  $bastion_ip = @bastion_server.current_instance().public_ip_addresses[0]
+  @hana_master_server = rs_cm.servers.get(filter: ["deployment_href=="+@@deployment.href, "name==Master"])
+  $hana_master_ip = @hana_master_server.current_instance().private_ip_addresses[0]
+
+  # This is an expensive CAT to run - these SAP-HANA nodes are not cheap.
+  # So in the interest of being cost conscious in our demo environment, 
+  # I automatically stop the CAT after 2 hours after initial launch.
+  $time = now() + 7200 # seconds
+  rs_ss.scheduled_actions.create(
+    execution_id: @@execution.id,
+    action: "stop",
+    first_occurrence: $time
+  )
 end
 
 # Coordinate termination of the now existent servers
@@ -68,13 +86,22 @@ define terminator() do
 end
 
 define stopper() do
-  @instances = @@deployment.servers().current_instances()
+  @instances = @@deployment.servers().current_instance()
   call rl_enable.stop_instances(@instances) retrieve @stopped_instances
 end
 
 define starter() do
-  @instances = @@deployment.servers().current_instances()
+  @instances = @@deployment.servers().current_instance()
   call rl_enable.start_instances(@instances) 
+  
+  # This is an expensive CAT to run - these SAP-HANA nodes are not cheap.
+  # So in the interest of demoing, once started, the CAT automatically stops after 2 hours.
+  $time = now() + 7200 # seconds
+  rs_ss.scheduled_actions.create(
+    execution_id: @@execution.id,
+    action: "stop",
+    first_occurrence: $time
+  )
 end
   
 
