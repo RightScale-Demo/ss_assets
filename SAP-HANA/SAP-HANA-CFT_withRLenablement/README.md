@@ -18,6 +18,9 @@ If you are using the SUSE for SAP AMIs, you will need to accept the terms and co
 - http://aws.amazon.com/marketplace/pp?sku=dgdq2f6vrm6evuoncsy2kouzw
 Similarly, if using RHEL AMI, you need to accept Ts&Cs.
 
+If you want to access the SAP cluster as a user, you need SAP client and need to tunnel through the Bastion server.
+How to do all this is an exercise left to the reader.
+
 # Set up/Installation
 - Push the "SAP-HANA Wrapper" ServerTemplate located in this folder into the account.
 - Upload the following package and CAT files
