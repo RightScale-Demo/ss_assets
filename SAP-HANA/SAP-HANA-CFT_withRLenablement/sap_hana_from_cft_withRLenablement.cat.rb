@@ -1,6 +1,8 @@
 name "SAP-HANA - Launched by CFT and RightLink Enabled"
 rs_ca_ver 20161221
-short_description  "SAP-HANA launched by CFT and then RightLink enabled."
+short_description  "![logo](https://s3.amazonaws.com/rs-pft/cat-logos/SAP-Hana-Logo.png)
+
+SAP-HANA Stack launched by CFT and then RightLink enabled."
 
 import "cft/sap_hana_newvpc"
 import "pft/err_utilities", as: "debug"
