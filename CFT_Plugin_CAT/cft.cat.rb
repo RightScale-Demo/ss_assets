@@ -5,7 +5,8 @@ Launches a CloudFormation Template that instantiates a RedShift Cluster"
 
 import "pft/err_utilities"
 import "pft/permissions"
-import "plugins/rs_aws_cft"
+import "plugins/rs_aws_useast1_cft"
+import "plugins/rs_aws_uswest1_cft"
 
 ##################
 # Permissions    #
@@ -22,14 +23,19 @@ end
 # Customize with additional regions if needed
 mapping "map_region" do {
   "us-east-1" => {
-    "api_endpoint" => "cloudformation.us-east-1.amazonaws.com" },
+    "name_space" => "rs_aws_useast1_cft" },
   "us-west-1" => {
-    "api_endpoint" => "cloudformation.us-west-1.amazonaws.com" },
-  "us-west-2" => {
-    "api_endpoint" => "cloudformation.us-west-2.amazonaws.com" } }
-end
+    "name_space" => "rs_aws_uswest1_cft" }
+} end
 
 # PARAMETERS (INPUTS)
+parameter "param_region" do
+  type "string"
+  label "Region for Deployment"
+  allowed_values "us-east-1", "us-west-1"
+  default "us-east-1"
+end
+
 parameter "databasename" do
   type "string"
   label "DB Name"
@@ -66,7 +72,7 @@ output "out_clusterendpoint" do
   label "RedShift Cluster Endpoint"
 end
 
-resource "stack", type: "rs_aws_cft.stack" do
+resource "stack", type: "rs_aws_useast1_cft.stack" do
   stack_name join(["redshift-", last(split(@@deployment.href, "/"))])
   template_url "https://s3-us-west-2.amazonaws.com/cloudformation-templates-us-west-2/Redshift.template"
   description "RedShift via CFT"
@@ -80,6 +86,24 @@ resource "stack", type: "rs_aws_cft.stack" do
   parameter_4_value $masteruserpassword
   parameter_5_name "ClusterType"
   parameter_5_value switch(equals?($numberofnodes, 1), "single-node", "multi-node")
+end
+
+operation "launch" do
+  definition "launcher"
+end
+
+define launcher(@stack, $map_region, $param_region) return @stack do
+  
+  # Update the stack declaration with the correct plugin namespace based on user selection
+  $stack_object = to_object(@stack)
+  $stack_object["namespace"] = map($map_region, $param_region, "name_space")
+  @stack = $stack_object
+
+  provision(@stack)
+end
+  
+define log($summary, $details) do
+  rs_cm.audit_entries.create(notify: "None", audit_entry: { auditee_href: @@deployment, summary: $summary , detail: $details})
 end
 
 # OPERATIONS
