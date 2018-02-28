@@ -10,7 +10,6 @@ import "pft/mci"
 import "pft/linux_server_declarations"
 import "pft/mci/linux_mappings", as: "linux_mappings"
 import "pft/resources", as: "common_resources"
-import "pft/conditions"
 
 ### Mappings ###
 mapping "map_cloud" do {
@@ -18,19 +17,25 @@ mapping "map_cloud" do {
     "cloud" => "EC2 us-west-2",
     "datacenter" => "us-west-2b",
     "ssh_key" => "@ssh_key",
-    "subnet" => "@vpc_subnet"
+    "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
+    "gw" => "@vpc_igw",
+    "tag_prefix" => "ec2"
   },
   "Google" => {
     "cloud" => "Google",
     "datacenter" => "us-central1-b",
     "ssh_key" => null,
-    "subnet" => null
+    "subnet" => "default",  # Google creates a subnet named "default" and so we want to reference it in the context of the network we created
+    "gw" => null,
+    "tag_prefix" => "gce"
   },
   "AzureRM" => {   
     "cloud" => "AzureRM East US",
     "datacenter" => null,
     "ssh_key" => null,
-    "subnet" => "@vpc_subnet"
+    "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
+    "gw" => null,
+    "tag_prefix" => "azure"
   }
 } end
 
@@ -62,7 +67,7 @@ parameter "param_location" do
   label "Cloud"
   category "Deployment Options"
   description "Target cloud for this cluster."
-  allowed_values "AWS", "Google", "AzureRM"
+  allowed_values "AWS", "AzureRM", "Google"
   default "AWS"
 end
 
@@ -83,6 +88,14 @@ parameter "param_numservers" do
   max_value 5
   constraint_description "Maximum of 5 servers allowed by this application."
   default 1
+end
+
+parameter "param_costcenter" do 
+  category "Deployment Options"
+  label "Cost Center" 
+  type "string" 
+  allowed_values "Development", "QA", "Production"
+  default "Development"
 end
 
 ### Outputs ###
@@ -174,25 +187,12 @@ resource "linux_servers", type: "server", copies: $param_numservers do
   cloud map($map_cloud, $param_location, "cloud")
   datacenter map($map_cloud, $param_location, "datacenter")
   network @vpc_network
-  subnet_hrefs map($map_cloud, $param_location, "subnet")
+  subnets map($map_cloud, $param_location, "subnet")  # Find the named subnet in the referenced network above.
   instance_type map($map_instancetype, $param_instancetype, $param_location)
   ssh_key_href map($map_cloud, $param_location, "ssh_key")
   security_groups @cluster_sg  
   server_template_href find(map($map_config, "st", "name"), revision: map($map_config, "st", "rev"))
   multi_cloud_image_href find(map($map_config, "mci", "name"), revision: map($map_config, "mci", "rev"))
-end
-
-### Conditions ###
-condition "needsSshKey" do
-  like $conditions.needsSshKey
-end
-
-condition "supportsSubnets" do
-  logic_or(equals?($param_location, "AWS"), equals?($param_location, "AzureRM"))
-end
-
-condition "needsRoutesGateways" do
-  equals?($param_location, "AWS")
 end
 
 operation 'launch' do
@@ -218,19 +218,26 @@ end
 
 # Create the network and related components.
 # Let auto-launch take care of standing up the server(s) in the network.
-define launch(@linux_servers, @vpc_network, @vpc_subnet, @vpc_igw, @vpc_route_table, @vpc_route, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $needsSshKey, $supportsSubnets, $needsRoutesGateways, $param_location, $map_cloud, $map_config, $map_image_name_root) return @linux_servers, @vpc_network, @vpc_subnet, @vpc_igw, @vpc_route_table, @vpc_route, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp do
-  
-  call debug.log("before provision: subnet hash", to_s(to_object(@vpc_subnet)))
-  
+define launch(@linux_servers, @vpc_network, @vpc_subnet, @vpc_igw, @vpc_route_table, @vpc_route, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @linux_servers, @vpc_network, @vpc_subnet, @vpc_igw, @vpc_route_table, @vpc_route, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp do
+    
   # provision networking
   provision(@vpc_network)
   
-  if $supportsSubnets
+  if map($map_cloud, $param_location, "subnet") == "default"  # then we need to wait for the default subnet to appear
+    @cloud = @vpc_network.cloud()
+    $network_href = @vpc_network.href
+    @default_subnet = rs_cm.subnets.empty()
+    while size(@default_subnet) == 0 do
+      sleep(10)
+      @default_subnet = @cloud.subnets(filter: ["network_href=="+$network_href])
+      call debug.log("Waiting for default subnet", to_s(to_object(@default_subnet)))
+    end
+  else # then we need to provision the subnet
     provision(@vpc_subnet)
   end
   
-  if $needsRoutesGateways
-    concurrent return @vpc_subnet, @vpc_igw, @vpc_route_table  do
+  if map($map_cloud, $param_location, "gw")
+    concurrent return @vpc_igw, @vpc_route_table  do
       provision(@vpc_igw)
       provision(@vpc_route_table)    
     end
@@ -242,88 +249,29 @@ define launch(@linux_servers, @vpc_network, @vpc_subnet, @vpc_igw, @vpc_route_ta
    provision(@cluster_sg_rule_int_tcp)
    provision(@cluster_sg_rule_int_udp)
    
-   
-  
-#  call debug.log("after network provision", "")
-#  
-##  if $param_location == "AWS"
-#    call debug.log("in subnet", "")
-#    provision(@vpc_subnet)
-#    $state = @vpc_subnet.state
-#    call debug.log("state before loop: "+$state, "")
-#    while $state != "available" do
-#      call debug.log("waiting for subnet state", "")
-#      sleep(10)
-#      $state = @vpc_subnet.state
-#      call debug.log("state in loop: "+$state, "")
-#    end
-#    call debug.log("after subnet provision", "")
-#    call debug.log("subnet hash after provision", to_s(to_object(@vpc_subnet)))
-#
-#  end
+  # In the spirit of portability, run some logic to update the MCI in case the off-the-shelf
+  # image has been deprecated. 
+  # This adds about a minute to the launch but is worth it to avoid a failure due to the cloud provider
+  # deprecating the image we use.
+  $cloud_name = map( $map_cloud, $param_location, "cloud" )
+  $mci_name = map($map_config, "mci", "name")
+  call mci.find_mci($mci_name) retrieve @mci
+  @cloud = find("clouds", $cloud_name)
+  call mci.find_image_href(@cloud, $map_image_name_root, "PFT Base Linux", $param_location) retrieve $image_href
+  call mci.mci_upsert_cloud_image(@mci, @cloud.href, $image_href)
 
-#  if $param_location == "AWS"
-#  provision(@vpc_route)
-
-#    call debug.log("in route table", "")
-#    provision(@vpc_route_table) 
-#    call debug.log("after route table", "") 
-#    provision(@vpc_igw)  
-#    call debug.log("after igw", "")
-#    call debug.log("after route", "")
-#     configure the network to use the route table
-#    @vpc_network.update(network: {route_table_href: to_s(@vpc_route_table.href)})
-#    call debug.log("after network update", "")
-#  end
-  
-#  call debug.log("after route block", "")
-#  
-#  provision(@cluster_sg_rule_int_tcp)
-#  provision(@cluster_sg_rule_int_udp)
-#  
-#  call debug.log("after sg rules", "")
-#  
-#  # In the spirit of portability, run some logic to update the MCI in case the off-the-shelf
-#  # image has been deprecated. 
-#  # This adds about a minute to the launch but is worth it to avoid a failure due to the cloud provider
-#  # deprecating the image we use.
-#  $cloud_name = map( $map_cloud, $param_location, "cloud" )
-#  $mci_name = map($map_config, "mci", "name")
-#  call mci.find_mci($mci_name) retrieve @mci
-#  @cloud = find("clouds", $cloud_name)
-#  call mci.find_image_href(@cloud, $map_image_name_root, "PFT Base Linux", $param_location) retrieve $image_href
-#  call mci.mci_upsert_cloud_image(@mci, @cloud.href, $image_href)
-
-#  # Launch the server(s)
-
-#  
-#  call debug.log("after key block", "")
-#  
-#  call debug.log("subnet hash befor eserver", to_s(to_object(@vpc_subnet)))
-#  call debug.log("network hash", to_s(to_object(@vpc_network)))
-#  sub on_error: skip do
-#    call debug.log("server hash in on_error block", to_s(to_object(@linux_servers)))
-#  end
-#  
-##  sub on_error: retry do
-#    call debug.log("In server block", "")
-##    sleep(10)
-#    provision(@linux_servers)
-##  end
-#    
-
-  if $needsSshKey
+  if map($map_cloud, $param_location, "ssh_key")
     provision(@ssh_key)
   end
-   
+
   provision(@linux_servers)
 
 end
 
-define enable(@linux_servers) return @servers, $server_ips do
+define enable(@linux_servers, $param_costcenter, $map_cloud, $param_location) return @servers, $server_ips do
   
     # Tag the servers with the selected project cost center ID.
-    $tags=[join(["costcenter:id=",$param_costcenter])]
+    $tags=[join([map($map_cloud, $param_location, "tag_prefix"), ":costcenter=",$param_costcenter])]
     rs_cm.tags.multi_add(resource_hrefs: @@deployment.servers().current_instance().href[], tags: $tags)
     
     # Wait until all the servers have IP addresses
