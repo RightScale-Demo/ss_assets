@@ -27,7 +27,7 @@ mapping "map_cloud" do {
     "ssh_key" => null,
     "subnet" => "default",  # Google creates a subnet named "default" and so we want to reference it in the context of the network we created
     "gw" => null,
-    "tag_prefix" => "gce"
+    "tag_prefix" => "rs"
   },
   "AzureRM" => {   
     "cloud" => "AzureRM East US",
