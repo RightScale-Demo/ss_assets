@@ -16,6 +16,7 @@ short_description "![logo](https://s3.amazonaws.com/rs-pft/cat-logos/docker.png)
 
 WordPress Container with External RDS MySQL DB Server"
 
+import "pft/parameters"
 import "pft/creds_utilities"
 import "pft/account_utilities"
 import "pft/err_utilities"
@@ -64,7 +65,7 @@ parameter "param_db_size" do
   max_value 25
 end
 
-parameter "param_costcenter" do 
+parameter "param_budgetcode" do 
   category "Deployment Options"
   label "Budget Code" 
   type "number" 
@@ -72,6 +73,12 @@ parameter "param_costcenter" do
   max_value 999999
   default 1164
 end
+
+parameter "param_costcenter" do 
+  category "Deployment Options"
+  like $parameters.param_costcenter
+end
+
 
 ### Outputs ###
 output "wordpress_url" do
@@ -161,6 +168,8 @@ resource "rds", type: "rs_aws_rds.db_instance" do
   storage_encrypted "false"
   storage_type "standard"
   tag_key_1 "BudgetCode"
+  tag_value_1 $param_budgetcode
+  tag_key_2 "costcenter"
   tag_value_1 $param_costcenter
 end
 
@@ -183,7 +192,7 @@ end
 ########
 # RCL
 ########
-define launch_handler(@wordpress_docker_server, @rds, @ssh_key, @sec_group, @sec_group_rule_http, @sec_group_rule_ssh, $param_costcenter, $param_db_username, $param_db_password, $map_cat)  return @wordpress_docker_server, @rds, $rds_link, @ssh_key, @sec_group_rule_http, @sec_group_rule_ssh, @sec_group, $wordpress_link do 
+define launch_handler(@wordpress_docker_server, @rds, @ssh_key, @sec_group, @sec_group_rule_http, @sec_group_rule_ssh, $param_budgetcode, $param_costcenter, $param_db_username, $param_db_password, $map_cat)  return @wordpress_docker_server, @rds, $rds_link, @ssh_key, @sec_group_rule_http, @sec_group_rule_ssh, @sec_group, $wordpress_link do 
 
   concurrent return @sec_group, @ssh_key do
       provision(@ssh_key)
@@ -221,7 +230,7 @@ define launch_handler(@wordpress_docker_server, @rds, @ssh_key, @sec_group, @sec
   $wordpress_link = join(["http://",$wordpress_server_address,":8080"])
     
   # Tag the docker server with the required tags.
-  $tags=[join(["ec2:BudgetCode=",$param_costcenter]), join(["ec2:ExecutionName=",$execution_name]), join(["ec2:Owner=",$userid]), join(["ec2:Description=",$execution_description])]
+  $tags=[join(["ec2:BudgetCode=",$param_budgetcode]), join(["ec2:costcenter=",$param_costcenter]), join(["ec2:ExecutionName=",$execution_name]), join(["ec2:Owner=",$userid]), join(["ec2:Description=",$execution_description])]
   rs_cm.tags.multi_add(resource_hrefs: @@deployment.servers().current_instance().href[], tags: $tags)
 
   # Create Credentials with the DB creds

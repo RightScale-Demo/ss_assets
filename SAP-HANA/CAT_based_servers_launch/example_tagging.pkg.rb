@@ -6,8 +6,8 @@ package "sap_hana/tagging"
 
 parameter "param_bc" do 
   category "User Inputs"
-  label "Billing Code" 
-  constraint_description "Billing Code must be of the form 4 uppercase characters and 3 numerals (e.g. ABCD123)."
+  label "Budget Code" 
+  constraint_description "Budget Code must be of the form 4 uppercase characters and 3 numerals (e.g. ABCD123)."
   type "string" 
   min_length 7
   max_length 7
@@ -40,6 +40,6 @@ define deployment_resources_tagger($param_bc, $param_env, $param_proj)  do
     $business_owner = @user.first_name + " " + @user.last_name
   
     # Tag the servers appropriately.
-    $tags=["ec2:MEMBERFIRM=US", "ec2:COUNTRY=US", "ec2:FUNCTION=CON", "ec2:SUBFUNCTION=DCP", "ec2:BUSINESSOWNER="+$business_owner, "ec2:BILLINGCODE="+$param_bc,"ec2:ENVIRONMENT="+$param_env, "ec2:PROJECTNAME="+$param_proj]
+    $tags=["ec2:MEMBERFIRM=US", "ec2:COUNTRY=US", "ec2:FUNCTION=CON", "ec2:SUBFUNCTION=DCP", "ec2:BUSINESSOWNER="+$business_owner, "ec2:BudgetCode="+$param_bc,"ec2:ENVIRONMENT="+$param_env, "ec2:PROJECTNAME="+$param_proj]
     rs_cm.tags.multi_add(resource_hrefs: @@deployment.servers().current_instance().href[], tags: $tags)
 end 
