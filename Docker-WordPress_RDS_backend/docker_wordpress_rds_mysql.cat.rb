@@ -230,7 +230,7 @@ define launch_handler(@wordpress_docker_server, @rds, @ssh_key, @sec_group, @sec
   $wordpress_link = join(["http://",$wordpress_server_address,":8080"])
     
   # Tag the docker server with the required tags.
-  $tags=[join(["ec2:BudgetCode=",$param_budgetcode]), join(["ec2:costcenter=",$param_costcenter]), join(["ec2:ExecutionName=",$execution_name]), join(["ec2:Owner=",$userid]), join(["ec2:Description=",$execution_description])]
+  $tags=[join(["ec2:BudgetCode=",$param_budgetcode]), join(["ec2:costcenter=",$param_costcenter])]
   rs_cm.tags.multi_add(resource_hrefs: @@deployment.servers().current_instance().href[], tags: $tags)
 
   # Create Credentials with the DB creds
