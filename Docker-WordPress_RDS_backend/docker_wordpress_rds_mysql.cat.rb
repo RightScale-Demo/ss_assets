@@ -170,7 +170,7 @@ resource "rds", type: "rs_aws_rds.db_instance" do
   tag_key_1 "BudgetCode"
   tag_value_1 $param_budgetcode
   tag_key_2 "costcenter"
-  tag_value_1 $param_costcenter
+  tag_value_2 $param_costcenter
 end
 
 # Operations
