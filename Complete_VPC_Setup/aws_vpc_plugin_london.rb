@@ -11,10 +11,10 @@ resource_pool "vpc_pool" do
   host "ec2.eu-west-2.amazonaws.com"
   auth "key", type: "aws" do
     version     4
-    service    "ec2"
-    region      "eu-west-2"
-    access_key cred("AWS_ACCESS_KEY_ID")
-    secret_key cred("AWS_SECRET_ACCESS_KEY")
+    service    'ec2'
+    region      'eu-west-2'
+    access_key cred('AWS_ACCESS_KEY_ID')
+    secret_key cred('AWS_SECRET_ACCESS_KEY')
   end
 end
 
