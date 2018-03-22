@@ -1,4 +1,4 @@
-name 'Two-Tier VPC with IGW and NAT-GW'
+name 'Two-Tier VPC with IGW and NAT-GW with MultiRegion '
 rs_ca_ver 20161221
 short_description "![Network](https://s3.amazonaws.com/rs-pft/cat-logos/private_network.png)\n
 Creates a network with a public and private subnet with a single server in the public subnet and user-specified number of servers in the private subnet."
