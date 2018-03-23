@@ -6,7 +6,7 @@ long_description "Version 1.4"
 package "plugin/rs_aws_vpc_oregon"
 import "sys_log"
 
-resource_pool "vpc_pool" do
+resource_pool "rs_aws_vpc_oregon" do
   plugin $rs_aws_vpc_oregon
   host "ec2.us-west-2.amazonaws.com"
   auth "key", type: "aws" do

@@ -6,7 +6,7 @@ long_description "Version 1.4"
 package "plugin/rs_aws_vpc_frankfurt"
 import "sys_log"
 
-resource_pool "vpc_pool" do
+resource_pool "rs_aws_vpc_frankfurt" do
   plugin $rs_aws_vpc_frankfurt
   host "ec2.eu-central-1.amazonaws.com"
   auth "key", type: "aws" do

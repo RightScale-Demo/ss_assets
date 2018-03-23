@@ -6,7 +6,7 @@ long_description "Version 1.4"
 package "plugin/rs_aws_vpc_ireland"
 import "sys_log"
 
-resource_pool "vpc_pool" do
+resource_pool "rs_aws_vpc_ireland" do
   plugin $rs_aws_vpc_ireland
   host "ec2.eu-west-1.amazonaws.com"
   auth "key", type: "aws" do
