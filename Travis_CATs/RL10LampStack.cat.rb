@@ -22,7 +22,7 @@
 # User can use a post-launch action to install a different version of the application software from a Git repo.
 
 
-name 'Engineering LAMP Stack'
+name 'FW LAMP Stack'
 rs_ca_ver 20160622
 short_description "![logo](https://s3.amazonaws.com/rs-pft/cat-logos/lamp_icon.png)
 
@@ -234,6 +234,16 @@ end
 # RESOURCE DEFINITIONS     #
 ############################
 
+### CAT Claimed Tokens ###
+# Using credential resource object as a stand in for declaring the number of meows this CAT consumes.
+# This number is compared against the number of meows currently consumed and denies the launch if exceeded.
+# This resource must be the first resource provisioned by the CAT.
+resource "meows", type: "credential", provision: "check_quota" do
+  name join(['meows-',last(split(@@deployment.href,"/"))])
+  value switch($isHA, "5", "2") # cat pays more if launched HA
+end
+
+
 ### Server Declarations ###
 resource 'chef_server', type: 'server' do
   like @lamp_resources.chef_server
@@ -352,12 +362,54 @@ end
 ####################
 operation "launch" do
   description "Concurrently launch the servers"
-  definition "lamp_utilities.launcher"
+  definition "local_launcher"
   output_mappings do {
     $site_url => $site_link,
     $lb_status => $lb_status_link,
   } end
 end
+
+define local_launcher($isHA, @meows, @chef_server, @lb_server, @app_server, @db_server, @db_server_2, @ssh_key, @sec_group, @sec_group_rule_ssh, @sec_group_rule_http, @sec_group_rule_https, @sec_group_rule_http8080, @sec_group_rule_mysql, @placement_group, $param_costcenter, $map_cloud, $map_st, $param_location, $inAzure, $invSphere, $needsSshKey, $needsPlacementGroup, $needsSecurityGroup, $param_chef_password)  return @meows, @lb_server, @app_server, @db_server, @db_server_2, @sec_group, @ssh_key, @placement_group, $site_link, $lb_status_link do
+
+  # This will check the quota
+  call check_quota(@meows) retrieve @meows
+  
+  # If we get this far, then we are good for launch  
+  call lamp_utilities.launcher($isHA, @chef_server, @lb_server, @app_server, @db_server, @db_server_2, @ssh_key, @sec_group, @sec_group_rule_ssh, @sec_group_rule_http, @sec_group_rule_https, @sec_group_rule_http8080, @sec_group_rule_mysql, @placement_group, $param_costcenter, $map_cloud, $map_st, $param_location, $inAzure, $invSphere, $needsSshKey, $needsPlacementGroup, $needsSecurityGroup, $param_chef_password)  retrieve @lb_server, @app_server, @db_server, @db_server_2, @sec_group, @ssh_key, @placement_group, $site_link, $lb_status_link 
+end
+
+
+define check_quota(@meows) return @meows do
+  
+  $meows_object = to_object(@meows)
+  $meows_requested = to_n($meows_object["fields"]["value"])
+    
+  # find all the currently used meows
+  @current_meows = rs_cm.credentials.get(filter: ["name==meows"])
+  $current_meow_names = @current_meows.name[]
+  $current_meows_used = 0
+  foreach $current_meow_name in $current_meow_names do
+    $current_meow = cred($current_meow_name)
+    $current_meows_used = $current_meows_used + to_n($current_meow)
+  end
+  
+  # Get the quota
+  $quota = to_n(cred("RS_ACCOUNT_MEOWS_QUOTA"))
+  
+  $meows_left = $quota - $current_meows_used
+  
+  if $meows_left < $meows_requested
+    raise "Quota exceeded. Requesting: "+to_s($meows_requested)+"; Current quota usage: "+to_s($current_meows_used)+" used out of "+to_s($quota)+" allowed."
+  end
+  
+  # If we get here, then store our meows and launch the system
+  provision(@meows)
+  
+  $current_meows_used = $current_meows_used + $meows_requested
+  call functions.log("Current quota usage: "+to_s($current_meows_used)+" used out of "+to_s($quota)+" allowed.", "")
+  
+end
+  
 
 operation "enable" do
   condition $isHA
@@ -537,3 +589,5 @@ define apply_costcenter_tag(@server_array) do
   # Now apply the costcenter tag to all the servers in the array - including the one that was just added as part of the scaling operation
   rs_cm.tags.multi_add(resource_hrefs: @server_array.current_instances().href[], tags: [$costcenter_tag])
 end
+
+
