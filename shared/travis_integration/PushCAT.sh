@@ -10,6 +10,8 @@ CHANGED_FILES=($(git diff --name-only $TRAVIS_COMMIT_RANGE))
 
 cat_files=${CHANGED_FILES}
 
+echo "TRAVIS COMMIT RANGE: ${TRAVIS_COMMIT_RANGE}"
+
 echo "CAT FILES: ${cat_files}"
 
 for cat_filename  in ${cat_files}
