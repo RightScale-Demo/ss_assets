@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+CHANGED_FILES=`git diff --name-only $TRAVIS_COMMIT_RANGE`
+
 rsc_cmd="./rsc -h ${RS_HOST} -a ${RS_ACCOUNT} -r ${RS_TOKEN}"
   
 # Get the schedule for publishing.
