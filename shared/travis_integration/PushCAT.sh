@@ -15,9 +15,11 @@ fi
 # Process the changed files and publish those that should be uploaded and published.
 for cat_filename in ${CHANGED_FILES}
 do
+echo "cat_filename: ${cat_filename}"
     # Only upload and publish files in the Travis_CATs folder
     if [[ ${cat_filename} = *Travis_CATs* ]]
     then
+echo "cat_filename passed Travis test"
         cat_name=$(sed -n -e "s/^name[[:space:]]['\"]*\(.*\)['\"]/\1/p" $cat_filename)
         echo "Checking to see if ($cat_name - $cat_filename) has already been uploaded..."
         cat_href=$(${rsc_cmd} ss index collections/$RS_ACCOUNT/templates "filter[]=name==$cat_name" | jq -r '.[0].href')
