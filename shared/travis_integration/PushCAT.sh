@@ -6,9 +6,12 @@ export RIGHT_ST_LOGIN_ACCOUNT_REFRESH_TOKEN=$RS_TOKEN
 
 rsc_cmd="./rsc -h ${RS_HOST} -a ${RS_ACCOUNT} -r ${RS_TOKEN}"
 
-echo ${rsc_cmd}
+CHANGED_FILES=($(git diff --name-only $TRAVIS_COMMIT_RANGE))
+echo "Changed Files:"
+echo $CHANGED_FILES
+echo "########"
 
-${rsc_cmd} ss index /api/catalog/catalogs/${RS_ACCOUNT}/applications
+#${rsc_cmd} ss index /api/catalog/catalogs/${RS_ACCOUNT}/applications
 
 #${rsc_cmd} cm15 by_tag /api/tags/by_tag "resource_type=instances" "tags[]=devops:servertype=webserver" | \
 #jq '.[] | { links: .links[].href}' |  \
