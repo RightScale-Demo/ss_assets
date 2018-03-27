@@ -410,27 +410,33 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
     # i.e. makes $$myplugin_region_gateway =  "rs_aws_vpc_oregon.nat_gateway"
     
     #Modiyfing Nat_GW for type for any region besides oregon.
-     if $cloud_location == "ohio"
       $nat_gw_object = to_object(@vpc_nat_gw)
       $nat_gw_fields = $nat_gw_object["fields"]
       $nat_gw_types = $nat_gw_object["type"]
+      if $cloud_location == "ohio"
+          @vpc_nat_gw = rs_aws_vpc_ohio.nat_gateway.create($nat_gw_fields)
+          $nat_gw_object2 = to_object(@vpc_nat_gw)
+          #$nat_gw_object["fields"]["subnet_id"] = map($map_cloud,"US East (Ohio) us-east-2", "subnet")
+          $nat_gw_object["fields"]["subnet_id"] = @vpc_subnet.resource_uid
+          @vpc_nat_gw = $nat_gw_object
+      end
+ 
+      
       #$nat2_gw_object = rs_aws_vpc_ohio.nat_gateway.create("fields")
       #@operation = rs_aws_vpc_ohio.nat_gateway.create("fields")
       #$nat2_gw_object = @operation
-      $new_nat_gateway_object2 = to_object(@vpc_nat_gw2.empty())
-      $new_nat_gateway_object2["type"] = "rs_aws_vpc_ohio.nat_gateway"
-      $new_nat_gateway_object2["fields"]["allocation_id"] = "TBD"
-      $new_nat_gateway_object2["fields"]["subnet_id"] = @vpc_subnet.resource_uid
-      @vpc_nat_gw = $new_nat_gateway
+      #@vpc_nat_gw2()
+      #$new_nat_gateway_object2 = to_object(@vpc_nat_gw2)
+      #$new_nat_gateway_object2["type"] = "rs_aws_vpc_ohio.nat_gateway"
+      #$new_nat_gateway_object2["fields"]["allocation_id"] = "TBD"
+      #$new_nat_gateway_object2["fields"]["subnet_id"] = @vpc_subnet.resource_uid
+      #@vpc_nat_gw = $new_nat_gateway
       
       #$nat_gw_object["type"] = "rs_aws_vpc_ohio.nat_gateway"
       #$nat_gw_object["fields"]["allocation_id"] = "TBD"
       #$nat_gw_object["fields"]["subnet_id"] = @vpc_subnet.resource_uid
       #@vpc_nat_gw = $nat_gw_object
-    end
-     
-     #allocation_id "TBD"  # RCL below sets the allocation_id for the elastic IP
-     #subnet_id @vpc_subnet.resource_uid
+      
      
     
   # provision networking
