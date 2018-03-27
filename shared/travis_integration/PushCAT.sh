@@ -9,23 +9,28 @@ rsc_cmd="./rsc -h ${RS_HOST} -a ${RS_ACCOUNT} -r ${RS_TOKEN}"
 # Only push files that are updated in the "Travis_CATs" folder.
 CHANGED_FILES=`git diff --name-only $TRAVIS_COMMIT_RANGE | grep "Travis_CATs"`
 
-cat_files=${CHANGED_FILES}
-
-for cat_filename in ${cat_files}
-do
-    cat_name=$(sed -n -e "s/^name[[:space:]]['\"]*\(.*\)['\"]/\1/p" $cat_filename)
-    echo "Checking to see if ($cat_name - $cat_filename) has already been uploaded..."
-    cat_href=$(${rsc_cmd} ss index collections/$ACCOUNT_ID/templates "filter[]=name==$cat_name" | jq -r '.[0].href')
+if [ ! -z $CHANGED_FILES ]
+then
     
-    if [[ -z "$cat_href" ]]
-    then
-        echo "($cat_name - $cat_filename) not already uploaded, creating it now..."
-        ${rsc_cmd} ss create collections/$ACCOUNT_ID/templates source=$cat_filename
-    else
-        echo "($cat_name - $cat_filename) already uploaded, updating it now..."
-        ${rsc_cmd} ss update $cat_href source=$cat_filename
-    fi
-done
+    for cat_filename in ${CHANGED_FILES}
+    do
+        cat_name=$(sed -n -e "s/^name[[:space:]]['\"]*\(.*\)['\"]/\1/p" $cat_filename)
+        echo "Checking to see if ($cat_name - $cat_filename) has already been uploaded..."
+        cat_href=$(${rsc_cmd} ss index collections/$ACCOUNT_ID/templates "filter[]=name==$cat_name" | jq -r '.[0].href')
+        
+        if [[ -z "$cat_href" ]]
+        then
+            echo "($cat_name - $cat_filename) not already uploaded, creating it now..."
+            ${rsc_cmd} ss create collections/$ACCOUNT_ID/templates source=$cat_filename
+        else
+            echo "($cat_name - $cat_filename) already uploaded, updating it now..."
+            ${rsc_cmd} ss update $cat_href source=$cat_filename
+        fi
+    done
+else
+    echo "No Travis CAT file changes found."
+    echo "Files that were changed: ${CHANGD_FILES}"
+fi
 
 
 #${rsc_cmd} ss index /api/catalog/catalogs/${RS_ACCOUNT}/applications
