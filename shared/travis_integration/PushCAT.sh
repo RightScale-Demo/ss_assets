@@ -7,12 +7,17 @@ export RIGHT_ST_LOGIN_ACCOUNT_REFRESH_TOKEN=$RS_TOKEN
 rsc_cmd="./rsc -h ${RS_HOST} -a ${RS_ACCOUNT} -r ${RS_TOKEN}"
 
 # Only push files that are updated in the "Travis_CATs" folder.
-CHANGED_FILES=`git diff --name-only $TRAVIS_COMMIT_RANGE | grep "Travis_CATs"`
+CHANGED_FILES=`git diff --name-only $TRAVIS_COMMIT_RANGE` 
+echo "CHANGED FILES: ${CHANGED_FILES}"
 
-if [ ! -z $CHANGED_FILES ]
+cat_files=`echo ${CHANGED_FILES} | grep "Travis_CATs"`
+
+echo "cat_files: ${cat_files}"
+
+if [ ! -z $cat_files ]
 then
     
-    for cat_filename in ${CHANGED_FILES}
+    for cat_filename in ${cat_files}
     do
         cat_name=$(sed -n -e "s/^name[[:space:]]['\"]*\(.*\)['\"]/\1/p" $cat_filename)
         echo "Checking to see if ($cat_name - $cat_filename) has already been uploaded..."
