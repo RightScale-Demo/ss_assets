@@ -409,32 +409,27 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
     $$myplugin_region_gateway = $$myplugin_region + ".nat_gateway"
     # i.e. makes $$myplugin_region_gateway =  "rs_aws_vpc_oregon.nat_gateway"
 
- 
   # provision networking
-  provision(@vpc_network)
-  
-    provision(@vpc_subnet)
-      
+  #provision(@vpc_network)
+  #provision(@vpc_subnet)
+    
       #Modiyfing Nat_GW for type for any region besides oregon.
       $nat_gw_object = to_object(@vpc_nat_gw)
       $nat_gw_fields = $nat_gw_object["fields"]
       $nat_gw_types = $nat_gw_object["type"]
       if $cloud_location == "ohio"
-          $nat_gw_object["type"] = "rs_aws_vpc_" + $cloud_location + ".nat_gateway"
-          if $cloud_location == "ohio"
-              @vpc_nat_gw = $nat_gw_object
-              provision(@vpc_nat_gw)
-          end
-          
+          $nat_gw_object["type"] = "rs_aws_vpc_ohio.nat_gateway"
+          @vpc_nat_gw = $nat_gw_object
+          #provision(@vpc_nat_gw)
       end
-      
-      provision(@vpc_priv_subnet)
-      provision(@vpc_igw)
-    
-  concurrent return @vpc_route_table, @vpc_priv_route_table  do
+
+  provision(@vpc_network)
+  provision(@vpc_subnet)
+
+  concurrent return @vpc_priv_subnet, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
       #provision(@vpc_subnet)
-      #rovision(@vpc_priv_subnet)
-      #provision(@vpc_igw)
+    provision(@vpc_priv_subnet)
+    provision(@vpc_igw)
     provision(@vpc_route_table)   
     provision(@vpc_priv_route_table)  
   end
