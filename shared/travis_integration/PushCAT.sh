@@ -34,7 +34,7 @@ CHANGED_FILES=`git diff --name-only $TRAVIS_COMMIT_RANGE`
                 ${rsc_cmd} ss update $cat_href source=$cat_filename
             fi
          else 
-            echo "Found file that is not a Travis CAT file: ${cat_file_name} - No action taken."
+            echo "Found file that is not a Travis CAT file: ${cat_filename} - No action taken."
          fi
     done
 
