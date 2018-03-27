@@ -3,7 +3,7 @@
 rsc_cmd="./rsc -h ${RS_HOST} -a ${RS_ACCOUNT} -r ${RS_TOKEN}"
   
 # Get the schedule for publishing.
-schedule_id=$(${rsc_cmd} --xm ':has(.name:val("Business Hours"))>.id' ss index /designer/collections/$ACCOUNT_ID/schedules | sed 's/"//g')
+schedule_id=$(${rsc_cmd} --xm ':has(.name:val("Business Hours"))>.id' ss index /designer/collections/$RS_ACCOUNT/schedules | sed 's/"//g')
 if [[ -z "$schedule_id" ]]
 then
     echo "Need Business Hours schedule. "
@@ -36,10 +36,10 @@ do
         then
           echo "($cat_name - $cat_filename) not already published, publishing it now..."
           # Publish the CAT
-          ${rsc_cmd} ss publish /designer/collections/${ACCOUNT_ID}/templates id="${cat_href}" schedules[]=${schedule_id}
+          ${rsc_cmd} ss publish /designer/collections/${RS_ACCOUNT}/templates id="${cat_href}" schedules[]=${schedule_id}
         else
           echo "($cat_name - $cat_filename) already published, updating it now..."
-          ${rsc_cmd} ss publish /designer/collections/${ACCOUNT_ID}/templates id="${cat_href}" schedules[]=${schedule_id} overridden_application_href="${catalog_href}"
+          ${rsc_cmd} ss publish /designer/collections/${RS_ACCOUNT}/templates id="${cat_href}" schedules[]=${schedule_id} overridden_application_href="${catalog_href}"
         fi
     else 
         echo "Found file that is not a Travis CAT file: ${cat_filename} - No action taken."
