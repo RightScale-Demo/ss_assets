@@ -20,7 +20,7 @@ end
 
 plugin "rs_aws_vpc_ohio" do
   endpoint do
-    default_host "ec2.amazonaws.com"
+    default_host "ec2.us-east-2.amazonaws.com"
     default_scheme "https"
     query do {
       "Version" => "2016-11-15"
