@@ -6,6 +6,8 @@ export RIGHT_ST_LOGIN_ACCOUNT_REFRESH_TOKEN=$RS_TOKEN
 
 rsc_cmd="./rsc -h ${RS_HOST} -a ${RS_ACCOUNT} -r ${RS_TOKEN}"
 
+echo ${rsc_cmd}
+
 ${rsc_cmd} ss index /api/catalog/catalogs/${RS_ACCOUNT}/applications
 
 #${rsc_cmd} cm15 by_tag /api/tags/by_tag "resource_type=instances" "tags[]=devops:servertype=webserver" | \
