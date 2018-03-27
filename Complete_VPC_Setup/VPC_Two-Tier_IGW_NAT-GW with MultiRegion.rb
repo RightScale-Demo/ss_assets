@@ -408,48 +408,38 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
    # My region gateway
     $$myplugin_region_gateway = $$myplugin_region + ".nat_gateway"
     # i.e. makes $$myplugin_region_gateway =  "rs_aws_vpc_oregon.nat_gateway"
-    
-    #Modiyfing Nat_GW for type for any region besides oregon.
+
+ 
+  # provision networking
+  provision(@vpc_network)
+  
+    provision(@vpc_subnet)
+      
+      #Modiyfing Nat_GW for type for any region besides oregon.
       $nat_gw_object = to_object(@vpc_nat_gw)
       $nat_gw_fields = $nat_gw_object["fields"]
       $nat_gw_types = $nat_gw_object["type"]
       if $cloud_location == "ohio"
-          @vpc_nat_gw = rs_aws_vpc_ohio.nat_gateway.create($nat_gw_fields)
-          #$nat_gw_object["fields"]["subnet_id"] = map($map_cloud,"US East (Ohio) us-east-2", "subnet")
-          #$nat_gw_object2["fields"]["subnet_id"] = @vpc_subnet.resource_uid
-          $nat_gw_object2[$nat_gw_fields]["subnet_id"] = @vpc_subnet.resource_uid
-          @vpc_nat_gw = $nat_gw_object2
+          $nat_gw_object["type"] = "rs_aws_vpc_" + $cloud_location + ".nat_gateway"
+          if $cloud_location == "ohio"
+              @vpc_nat_gw = $nat_gw_object
+              provision(@vpc_nat_gw)
+          end
+          
       end
- 
       
-      #$nat2_gw_object = rs_aws_vpc_ohio.nat_gateway.create("fields")
-      #@operation = rs_aws_vpc_ohio.nat_gateway.create("fields")
-      #$nat2_gw_object = @operation
-      #@vpc_nat_gw2()
-      #$new_nat_gateway_object2 = to_object(@vpc_nat_gw2)
-      #$new_nat_gateway_object2["type"] = "rs_aws_vpc_ohio.nat_gateway"
-      #$new_nat_gateway_object2["fields"]["allocation_id"] = "TBD"
-      #$new_nat_gateway_object2["fields"]["subnet_id"] = @vpc_subnet.resource_uid
-      #@vpc_nat_gw = $new_nat_gateway
-      
-      #$nat_gw_object["type"] = "rs_aws_vpc_ohio.nat_gateway"
-      #$nat_gw_object["fields"]["allocation_id"] = "TBD"
-      #$nat_gw_object["fields"]["subnet_id"] = @vpc_subnet.resource_uid
-      #@vpc_nat_gw = $nat_gw_object
-      
-     
+      provision(@vpc_priv_subnet)
+      provision(@vpc_igw)
     
-  # provision networking
-  provision(@vpc_network)
-  
-  concurrent return @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
-    provision(@vpc_subnet)
-    provision(@vpc_priv_subnet)
-    provision(@vpc_igw)
+  concurrent return @vpc_route_table, @vpc_priv_route_table  do
+      #provision(@vpc_subnet)
+      #rovision(@vpc_priv_subnet)
+      #provision(@vpc_igw)
     provision(@vpc_route_table)   
     provision(@vpc_priv_route_table)  
   end
   
+
   provision(@vpc_route)
 
   # Provision NAT GW bits and baubles
