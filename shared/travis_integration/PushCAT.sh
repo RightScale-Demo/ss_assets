@@ -7,7 +7,9 @@ export RIGHT_ST_LOGIN_ACCOUNT_REFRESH_TOKEN=$RS_TOKEN
 rsc_cmd="./rsc -h ${RS_HOST} -a ${RS_ACCOUNT} -r ${RS_TOKEN}"
 
 #CHANGED_FILES=($(git diff --name-only $TRAVIS_COMMIT_RANGE))
-CHANGED_FILES=($(git diff --name-only HEAD...$TRAVIS_BRANCH))
+CHANGED_FILES=`git diff --name-only $TRAVIS_COMMIT_RANGE`
+
+echo "CHANGED_FILES: ${CHANGED_FILES}"
 
 cat_files=${CHANGED_FILES}
 
