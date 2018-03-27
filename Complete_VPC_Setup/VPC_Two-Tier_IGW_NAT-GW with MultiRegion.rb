@@ -415,10 +415,10 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
       $nat_gw_types = $nat_gw_object["type"]
       if $cloud_location == "ohio"
           @vpc_nat_gw = rs_aws_vpc_ohio.nat_gateway.create($nat_gw_fields)
-          $nat_gw_object2 = to_object(@vpc_nat_gw)
           #$nat_gw_object["fields"]["subnet_id"] = map($map_cloud,"US East (Ohio) us-east-2", "subnet")
-          $nat_gw_object["fields"]["subnet_id"] = @vpc_subnet.resource_uid
-          @vpc_nat_gw = $nat_gw_object
+          #$nat_gw_object2["fields"]["subnet_id"] = @vpc_subnet.resource_uid
+          $nat_gw_object2[$nat_gw_fields]["subnet_id"] = @vpc_subnet.resource_uid
+          @vpc_nat_gw = $nat_gw_object2
       end
  
       
