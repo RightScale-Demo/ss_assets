@@ -1,4 +1,4 @@
-    name 'Two-Tier VPC with IGW and NAT-GW with MultiRegion'
+     name 'Two-Tier VPC with IGW and NAT-GW with MultiRegion'
 rs_ca_ver 20161221
 short_description "![Network](https://s3.amazonaws.com/rs-pft/cat-logos/private_network.png)\n
 Creates a network with a public and private subnet with a single server in the public subnet and user-specified number of servers in the private subnet."
@@ -20,6 +20,7 @@ import "sys_log"
 import "plugin/rs_aws_vpc_ohio"
 import "plugin/rs_aws_vpc_virginia"
 import "plugin/rs_aws_vpc_oregon"
+import "plugin/rs_aws_vpc_california"
 import "plugin/rs_aws_vpc_frankfurt"
 import "plugin/rs_aws_vpc_ireland"
 import "plugin/rs_aws_vpc_london"
@@ -28,8 +29,10 @@ import "plugin/rs_aws_vpc_paris"
 ### Mappings ###
 mapping "map_cloud" do {
   "US East (Ohio) us-east-2" => {
-    "cloud" => "US-Ohio",
-    "datacenter" => "us-east-2c", #"us-east-2a","us-east-2c"
+    "cloud" => "us-east-2",
+    "datacenter" => "us-east-2c",
+    "datacenter2" => "us-east-2b",
+    "datacenter3" => "us-east-2a",
     "ssh_key" => "@ssh_key",
     "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
     "priv_subnet" => "@vpc_priv_subnet.name",  
@@ -39,7 +42,9 @@ mapping "map_cloud" do {
   },
   "US East (N. Virginia) us-east-1" => {
       "cloud" => "us-east-1",
-      "datacenter" => "us-east-1f", #, "us-east-1d", "us-east-1e"
+      "datacenter" => "us-east-1f",
+      "datacenter2" => "us-east-1d",
+      "datacenter3" => "us-east-1c",
       "ssh_key" => "@ssh_key",
       "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
       "priv_subnet" => "@vpc_priv_subnet.name",
@@ -49,7 +54,9 @@ mapping "map_cloud" do {
   },
   "US West (Oregon) us-west-2" => {
       "cloud" => "us-west-2",
-      "datacenter" => "us-west-2c", #, "us-west-2b","us-west-2c"
+      "datacenter" => "us-west-2c",
+      "datacenter2" => "us-west-2b",
+      "datacenter3" => "us-west-2a",
       "ssh_key" => "@ssh_key",
       "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
       "priv_subnet" => "@vpc_priv_subnet.name",
@@ -59,7 +66,9 @@ mapping "map_cloud" do {
   },
   "US West (California) us-west-1" => {
       "cloud" => "us-west-1",
-      "datacenter" => "us-west-1c", #, "us-west-1b","us-west-1c"
+      "datacenter" => "us-west-1c",
+      "datacenter" => "us-west-1b",
+      "datacenter" => "us-west-1a",
       "ssh_key" => "@ssh_key",
       "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
       "priv_subnet" => "@vpc_priv_subnet.name",
@@ -69,7 +78,9 @@ mapping "map_cloud" do {
   },
   "EU (Frankfurt) eu-central-1" => {
       "cloud" => "eu-central-1",
-      "datacenter" => "eu-central-1c", #, "eu-central-1b","eu-central-1a"
+      "datacenter" => "eu-central-1c",
+      "datacenter2" => "eu-central-1b",
+      "datacenter3" => "eu-central-1a",
       "ssh_key" => "@ssh_key",
       "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
       "priv_subnet" => "@vpc_priv_subnet.name",
@@ -80,6 +91,8 @@ mapping "map_cloud" do {
   "EU (Ireland) eu-west-1" => {
       "cloud" => "eu-west-1",
       "datacenter" => "eu-west-1c",  # "eu-west-1b","eu-west-1a"
+      "datacenter2" => "eu-west-1b",
+      "datacenter3" => "eu-west-1a",
       "ssh_key" => "@ssh_key",
       "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
       "priv_subnet" => "@vpc_priv_subnet.name",
@@ -90,6 +103,8 @@ mapping "map_cloud" do {
   "EU (London) eu-west-2" => {
       "cloud" => "eu-west-2",
       "datacenter" => "eu-west-2c", # "eu-west-2b","eu-west-2a"
+      "datacenter2" => "eu-west-2b",
+      "datacenter3" => "eu-west-2a",
       "ssh_key" => "@ssh_key",
       "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
       "priv_subnet" => "@vpc_priv_subnet.name",
@@ -100,6 +115,8 @@ mapping "map_cloud" do {
   "EU (Paris) eu-west-3" => {
       "cloud" => "eu-west-3",
       "datacenter" => "eu-west-3c", #"eu-west-3b","eu-west-3a"
+      "datacenter2" => "eu-west-3b",
+      "datacenter3" => "eu-west-3a",
       "ssh_key" => "@ssh_key",
       "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
       "priv_subnet" => "@vpc_priv_subnet.name",
@@ -174,8 +191,8 @@ parameter "param_numservers" do
   label "Number of Servers to Launch in Private Subnet" 
   type "number" 
   min_value 1
-  max_value 5
-  constraint_description "Maximum of 5 servers allowed by this application."
+  max_value 2
+  constraint_description "Maximum of 2 servers allowed by this application."
   default 1
 end
 
@@ -185,6 +202,62 @@ parameter "param_costcenter" do
   type "string" 
   allowed_values "Development", "QA", "Production"
   default "Development"
+end
+
+parameter "vpc_network_cidr" do
+  category "VPC Networking"
+  label "VPC CIDR"
+  type "string"
+  description "Please enter a cidr block for the vpc network. Example:  10.1.1.0/22  Note: this network CANNOT be resized."
+  default "10.1.1.0/22"
+end
+
+parameter "vpc_public_subnet1_cidr" do
+    category "VPC Networking"
+    label "Public Subnet1 CIDR"
+    type "string"
+    description "Please enter a cidr block for public subnet 1. Example:  10.1.0.0/24"
+    default "10.1.0.0/24"
+end
+
+parameter "vpc_public_subnet2_cidr" do
+    category "VPC Networking"
+    label "Public Subnet2 CIDR"
+    type "string"
+    description "Please enter a cidr block for public subnet 2. Example:  10.1.1.0/24"
+    default "10.1.1.0/24"
+end
+
+parameter "vpc_public_subnet3_cidr" do
+    category "VPC Networking"
+    label "Public Subnet3 CIDR"
+    type "string"
+    description "Please enter a cidr block for public subnet 3. Example:  10.1.2.0/25"
+    default "10.1.2.0/25"
+end
+
+parameter "vpc_private_subnet1_cidr" do
+    category "VPC Networking"
+    label "Private Subnet1 CIDR"
+    type "string"
+    description "Please enter a cidr block for private subnet 1. Example:  10.1.2.128/25"
+    default "10.1.2.128/25"
+end
+
+parameter "vpc_private_subnet2_cidr" do
+    category "VPC Networking"
+    label "Private Subnet2 CIDR"
+    type "string"
+    description "Please enter a cidr block for private subnet 2. Example:  10.1.3.0/25"
+    default "10.1.3.0/25"
+end
+
+parameter "vpc_private_subnet3_cidr" do
+    category "VPC Networking"
+    label "Private Subnet3 CIDR"
+    type "string"
+    description "Please enter a cidr block for private subnet 3. Example:  10.1.3.128/25"
+    default "10.1.3.128/25"
 end
 
 ### Outputs ###
@@ -222,11 +295,61 @@ output "aws_region" do
     default_value $param_l
 end
 
+output "vpc_subnet" do
+  category "aws networking"
+  label "aws vpc cidr"
+  description "VPC CIDR"
+  default_value $vpc_network_cidr
+end
+
+output "public_subnet1" do
+    category "aws networking"
+    label "aws public subnet"
+    description "Public Subnet 1"
+    default_value $vpc_public_subnet1_cidr
+end
+
+output "public_subnet2" do
+    category "aws networking"
+    label "aws public subnet"
+    description "Public Subnet 2"
+    default_value $vpc_public_subnet2_cidr
+end
+
+output "public_subnet3" do
+    category "aws networking"
+    label "aws public subnet"
+    description "Public Subnet 3"
+    default_value $vpc_public_subnet3_cidr
+end
+
+output "private_subnet1" do
+    category "aws networking"
+    label "aws private subnet"
+    description "Private Subnet 1"
+    default_value $vpc_private_subnet1_cidr
+end
+
+output "private_subnet2" do
+    category "aws networking"
+    label "aws private subnet"
+    description "Private Subnet 2"
+    default_value $vpc_private_subnet2_cidr
+end
+
+output "private_subnet3" do
+    category "aws networking"
+    label "aws private subnet"
+    description "Private Subnet 3"
+    default_value $vpc_private_subnet3_cidr
+end
+
+
 ### VPC ###
 resource "vpc_network", type: "network" do
   name join(["cat_vpc_", last(split(@@deployment.href,"/"))])
   cloud map($map_cloud, $param_location, "cloud")
-  cidr_block "10.1.0.0/16"
+  cidr_block $vpc_network_cidr
 end
 ### /VPC ###
 
@@ -237,7 +360,25 @@ resource "vpc_subnet", type: "subnet" do
   cloud map($map_cloud, $param_location, "cloud")
   datacenter map($map_cloud, $param_location, "datacenter")
   network @vpc_network
-  cidr_block "10.1.1.0/24"
+  cidr_block "10.1.0.0/24"
+end
+
+# public facing subnet2
+resource "vpc_subnet2", type: "subnet" do
+    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
+    cloud map($map_cloud, $param_location, "cloud")
+    datacenter map($map_cloud, $param_location, "datacenter2")
+    network @vpc_network
+    cidr_block "10.1.1.0/24"
+end
+
+# public facing subnet3
+resource "vpc_subnet3", type: "subnet" do
+    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
+    cloud map($map_cloud, $param_location, "cloud")
+    datacenter map($map_cloud, $param_location, "datacenter3")
+    network @vpc_network
+    cidr_block "10.1.2.0/25"
 end
 
 # Internet gateway
@@ -269,7 +410,25 @@ resource "vpc_priv_subnet", type: "subnet" do
   cloud map($map_cloud, $param_location, "cloud")
   datacenter map($map_cloud, $param_location, "datacenter")
   network @vpc_network
-  cidr_block "10.1.2.0/24"
+  cidr_block $vpc_public_subnet1_cidr
+end
+
+# non-public facing subnet2
+resource "vpc_priv_subnet2", type: "subnet" do
+    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
+    cloud map($map_cloud, $param_location, "cloud")
+    datacenter map($map_cloud, $param_location, "datacenter2")
+    network @vpc_network
+    cidr_block $vpc_public_subnet2_cidr
+end
+
+# non-public facing subnet3
+resource "vpc_priv_subnet3", type: "subnet" do
+    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
+    cloud map($map_cloud, $param_location, "cloud")
+    datacenter map($map_cloud, $param_location, "datacenter3")
+    network @vpc_network
+    cidr_block $vpc_public_subnet3_cidr
 end
 
 # NAT gateway and Elastic IP
@@ -342,7 +501,7 @@ resource 'cluster_sg_rule_int_tcp', type: 'security_group_rule' do
   security_group @cluster_sg
   protocol 'tcp'
   direction 'ingress'
-  cidr_ips "10.1.0.0/16"
+  cidr_ips $vpc_network_cidr
   protocol_details do {
     'start_port' => '1',
     'end_port' => '65535'
@@ -356,7 +515,7 @@ resource 'cluster_sg_rule_int_udp', type: 'security_group_rule' do
   security_group @cluster_sg
   protocol 'udp'
   direction 'ingress'
-  cidr_ips "10.1.0.0/16"
+  cidr_ips $vpc_network_cidr
   protocol_details do {
     'start_port' => '1',
     'end_port' => '65535'
@@ -440,7 +599,7 @@ operation "start" do
 end
 
 # Create the network and related components and NAT gateway and servers and this and that.
-define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
+define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
 
 
    # Gettng the cloud location for the correct region plugin to call
@@ -481,9 +640,13 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
    
   provision(@vpc_network)
 
-  concurrent return @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
+  concurrent return @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
     provision(@vpc_subnet)
+    provision(@vpc_subnet2)
+    provision(@vpc_subnet3)
     provision(@vpc_priv_subnet)
+    provision(@vpc_priv_subnet2)
+    provision(@vpc_priv_subnet3)
     provision(@vpc_igw)
     provision(@vpc_route_table)   
     provision(@vpc_priv_route_table)  
@@ -573,32 +736,7 @@ end
 # Update some of the networking components to remove dependencies that would prevent cleaning up
 # the network.
 # Terminate the servers. We'll let auto-terminate handle the networking resources.
-define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip do
-  
-  #if $$cloud_location == "ohio"
-  # @@vpc_nat_gw = @vpc_nat_gw_ohio
-  #end
-  #if $$cloud_location == "oregon"
-  # @@vpc_nat_gw = @vpc_nat_gw_oregon
-  #end
-  #if $$cloud_location == "virginia"
-  # @@vpc_nat_gw = @vpc_nat_gw_virginia
-  #end
-  #if $$cloud_location == "california"
-  # @@vpc_nat_gw = @vpc_nat_gw_california
-  #end
-  #if $$cloud_location == "frankfurt"
-  # @@vpc_nat_gw = @vpc_nat_gw_frankfurt
-  #end
-  #if $$cloud_location == "ireland"
-  # @@vpc_nat_gw = @vpc_nat_gw_ireland
-  #end
-  #if $$cloud_location == "london"
-  # @@vpc_nat_gw = @vpc_nat_gw_london
-  #end
-  #if $$cloud_location == "paris"
-  # @@vpc_nat_gw = @vpc_nat_gw_paris
-  #end
+define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip do
   
   # Terminate the servers in the network.
   concurrent return @pub_server, @priv_servers do
