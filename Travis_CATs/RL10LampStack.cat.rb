@@ -26,7 +26,7 @@ name 'Engineering LAMP Stack'
 rs_ca_ver 20160622
 short_description "![logo](https://s3.amazonaws.com/rs-pft/cat-logos/lamp_icon.png)
 
-Launches a 3-tier LAMP stack."
+Launches a 3-tier LAMP stack. Which is great!"
 long_description "Launches a 3-tier LAMP stack.\n
 Clouds Supported: <B>AWS, AzureRM, Google, VMware</B>"
 
