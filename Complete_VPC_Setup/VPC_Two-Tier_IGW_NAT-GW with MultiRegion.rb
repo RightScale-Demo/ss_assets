@@ -28,8 +28,8 @@ import "plugin/rs_aws_vpc_paris"
 ### Mappings ###
 mapping "map_cloud" do {
   "US East (Ohio) us-east-2" => {
-    "cloud" => "us-east-2",
-    "datacenter" => "us-east-2b", #"us-east-2a","us-east-2b"
+    "cloud" => "US-Ohio",
+    "datacenter" => "us-east-2c", #"us-east-2a","us-east-2c"
     "ssh_key" => "@ssh_key",
     "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
     "priv_subnet" => "@vpc_priv_subnet.name",  
@@ -56,6 +56,16 @@ mapping "map_cloud" do {
       "gw" => "@vpc_igw",
       "tag_prefix" => "ec2",
       "aws_region" => "oregon",
+  },
+  "US West (California) us-west-1" => {
+      "cloud" => "us-west-1",
+      "datacenter" => "us-west-1c", #, "us-west-1b","us-west-1c"
+      "ssh_key" => "@ssh_key",
+      "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
+      "priv_subnet" => "@vpc_priv_subnet.name",
+      "gw" => "@vpc_igw",
+      "tag_prefix" => "ec2",
+      "aws_region" => "california",
   },
   "EU (Frankfurt) eu-central-1" => {
       "cloud" => "eu-central-1",
@@ -146,7 +156,7 @@ parameter "param_location" do
     label "AWS Region"
     category "Deployment Options"
     description "Target AWS Region for this cluster."
-    allowed_values "US East (Ohio) us-east-2", "US East (N. Virginia) us-east-1", "US West (Oregon) us-west-2", "EU (Frankfurt) eu-central-1","EU (Ireland) eu-west-1", "EU (London) eu-west-2", "EU (Paris) eu-west-3"
+    allowed_values "US East (Ohio) us-east-2", "US East (N. Virginia) us-east-1", "US West (California) us-west-1", "US West (Oregon) us-west-2", "EU (Frankfurt) eu-central-1","EU (Ireland) eu-west-1", "EU (London) eu-west-2", "EU (Paris) eu-west-3"
     default "US West (Oregon) us-west-2"
 end
 
@@ -280,6 +290,11 @@ resource "vpc_nat_gw_oregon", type: "rs_aws_vpc_oregon.nat_gateway" do
 end
 
 resource "vpc_nat_gw_virginia", type: "rs_aws_vpc_virginia.nat_gateway" do
+    allocation_id "TBD"  # RCL below sets the allocation_id for the elastic IP
+    subnet_id @vpc_subnet.resource_uid  # Sits in the public subnet but is a GW for private subnet
+end
+
+resource "vpc_nat_gw_california", type: "rs_aws_vpc_california.nat_gateway" do
     allocation_id "TBD"  # RCL below sets the allocation_id for the elastic IP
     subnet_id @vpc_subnet.resource_uid  # Sits in the public subnet but is a GW for private subnet
 end
@@ -425,7 +440,7 @@ operation "start" do
 end
 
 # Create the network and related components and NAT gateway and servers and this and that.
-define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
+define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
 
 
    # Gettng the cloud location for the correct region plugin to call
@@ -440,25 +455,28 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
     
 
    if $$cloud_location == "ohio"
-    @vpc_nat_gw = @vpc_nat_gw_ohio
+    @@vpc_nat_gw = @vpc_nat_gw_ohio
    end
    if $$cloud_location == "oregon"
-    @vpc_nat_gw = @vpc_nat_gw_oregon
+    @@vpc_nat_gw = @vpc_nat_gw_oregon
    end
    if $$cloud_location == "virginia"
-    @vpc_nat_gw = @vpc_nat_gw_virginia
+    @@vpc_nat_gw = @vpc_nat_gw_virginia
+   end
+   if $$cloud_location == "california"
+    @@vpc_nat_gw = @vpc_nat_gw_california
    end
    if $$cloud_location == "frankfurt"
-    @vpc_nat_gw = @vpc_nat_gw_frankfurt
+    @@vpc_nat_gw = @vpc_nat_gw_frankfurt
    end
    if $$cloud_location == "ireland"
-    @vpc_nat_gw = @vpc_nat_gw_ireland
+    @@vpc_nat_gw = @vpc_nat_gw_ireland
    end
    if $$cloud_location == "london"
-    @vpc_nat_gw = @vpc_nat_gw_london
+    @@vpc_nat_gw = @vpc_nat_gw_london
    end
    if $$cloud_location == "paris"
-    @vpc_nat_gw = @vpc_nat_gw_paris
+    @@vpc_nat_gw = @vpc_nat_gw_paris
    end
    
   provision(@vpc_network)
@@ -477,8 +495,8 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
   provision(@vpc_nat_ip)
   sleep_until(@vpc_nat_ip.address)
   call debug.log("ip address after sleep", to_s(@vpc_nat_ip.address))
-  call provision_nat_gw(@vpc_nat_gw, @vpc_nat_ip) retrieve @vpc_nat_gw
-  call provision_route_to_nat_gw(map($map_cloud, $param_location, "cloud"), @vpc_nat_gw, @vpc_priv_route_table)
+  call provision_nat_gw(@@vpc_nat_gw, @vpc_nat_ip) retrieve @@vpc_nat_gw
+  call provision_route_to_nat_gw(map($map_cloud, $param_location, "cloud"), @@vpc_nat_gw, @vpc_priv_route_table)
 
   # configure the subnets to use their route tables
   concurrent do
@@ -555,29 +573,32 @@ end
 # Update some of the networking components to remove dependencies that would prevent cleaning up
 # the network.
 # Terminate the servers. We'll let auto-terminate handle the networking resources.
-define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @vpc_nat_gw, @vpc_nat_ip do
+define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip do
   
-  if $$cloud_location == "ohio"
-   @vpc_nat_gw = @vpc_nat_gw_ohio
-  end
-  if $$cloud_location == "oregon"
-   @vpc_nat_gw = @vpc_nat_gw_oregon
-  end
-  if $$cloud_location == "virginia"
-   @vpc_nat_gw = @vpc_nat_gw_virginia
-  end
-  if $$cloud_location == "frankfurt"
-   @vpc_nat_gw = @vpc_nat_gw_frankfurt
-  end
-  if $$cloud_location == "ireland"
-   @vpc_nat_gw = @vpc_nat_gw_ireland
-  end
-  if $$cloud_location == "london"
-   @vpc_nat_gw = @vpc_nat_gw_london
-  end
-  if $$cloud_location == "paris"
-   @vpc_nat_gw = @vpc_nat_gw_paris
-  end
+  #if $$cloud_location == "ohio"
+  # @@vpc_nat_gw = @vpc_nat_gw_ohio
+  #end
+  #if $$cloud_location == "oregon"
+  # @@vpc_nat_gw = @vpc_nat_gw_oregon
+  #end
+  #if $$cloud_location == "virginia"
+  # @@vpc_nat_gw = @vpc_nat_gw_virginia
+  #end
+  #if $$cloud_location == "california"
+  # @@vpc_nat_gw = @vpc_nat_gw_california
+  #end
+  #if $$cloud_location == "frankfurt"
+  # @@vpc_nat_gw = @vpc_nat_gw_frankfurt
+  #end
+  #if $$cloud_location == "ireland"
+  # @@vpc_nat_gw = @vpc_nat_gw_ireland
+  #end
+  #if $$cloud_location == "london"
+  # @@vpc_nat_gw = @vpc_nat_gw_london
+  #end
+  #if $$cloud_location == "paris"
+  # @@vpc_nat_gw = @vpc_nat_gw_paris
+  #end
   
   # Terminate the servers in the network.
   concurrent return @pub_server, @priv_servers do
@@ -596,8 +617,8 @@ define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_pri
   @vpc_priv_subnet.update(subnet: {route_table_href: $default_route_table_href})
   
   # Delete NAT GW and Elastic IP
-  delete(@vpc_nat_gw)
-  sleep_until(@vpc_nat_gw.state == "deleted")
+  delete(@@vpc_nat_gw)
+  sleep_until(@@vpc_nat_gw.state == "deleted")
   delete(@vpc_nat_ip)
   
   # Remove IGW reference to the VPC and delete the IGW
