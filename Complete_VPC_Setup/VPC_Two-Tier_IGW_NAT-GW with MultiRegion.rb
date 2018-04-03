@@ -438,20 +438,6 @@ resource "vpc_nat_ip", type: "ip_address" do
   cloud map($map_cloud, $param_location, "cloud")
 end
 
-# NAT gateway and Elastic IP 2
-resource "vpc_nat_ip2", type: "ip_address" do
-  name join(["cat_nat_ip2_", last(split(@@deployment.href,"/"))])
-  domain "vpc"
-  cloud map($map_cloud, $param_location, "cloud")
-end
-
-# NAT gateway and Elastic IP 3
-resource "vpc_nat_ip3", type: "ip_address" do
-  name join(["cat_nat_ip3_", last(split(@@deployment.href,"/"))])
-  domain "vpc"
-  cloud map($map_cloud, $param_location, "cloud")
-end
-
 resource "vpc_nat_gw_ohio", type: "rs_aws_vpc_ohio.nat_gateway" do
     allocation_id "TBD"  # RCL below sets the allocation_id for the elastic IP
     subnet_id @vpc_subnet.resource_uid  # Sits in the public subnet but is a GW for private subnet
@@ -705,21 +691,40 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet
      @vpc_subnet.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
     end
     sub on_error: stop_debugging() do
+     @vpc_subnet2.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
+    end
+    sub on_error: stop_debugging() do
+     @vpc_subnet3.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
+    end
+
+    sub on_error: stop_debugging() do
      @vpc_priv_subnet.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
+    end
+    sub on_error: stop_debugging() do
+     @vpc_priv_subnet2.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
+    end
+    sub on_error: stop_debugging() do
+     @vpc_priv_subnet3.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
     end
   end
     
-  provision(@cluster_sg_rule_int_tcp)
-  provision(@cluster_sg_rule_int_udp)
+  sub on_error: stop_debugging() do 
+   provision(@cluster_sg_rule_int_tcp)
+  end
+  sub on_error: stop_debugging() do
+   provision(@cluster_sg_rule_int_udp)
+  end
   
-  provision(@ssh_key)
-
-  concurrent return @pub_server, @priv_servers do
-    provision(@pub_server)
-    provision(@priv_servers)
+  sub on_error: stop_debugging() do
+   provision(@ssh_key)
   end
 
-  call stop_debugging()
+  concurrent return @pub_server, @priv_servers do
+     provision(@pub_server)
+     provision(@priv_servers)
+   call stop_debugging()
+  end
+
 end
 
 # Use VPC plugin to orchestrate provisioning the NAT gateway.
@@ -797,7 +802,8 @@ define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_sub
   $default_route_table_href = @default_route_table.href
   @vpc_subnet.update(subnet: {route_table_href: $default_route_table_href})
   @vpc_priv_subnet.update(subnet: {route_table_href: $default_route_table_href})
-  
+  @vpc_priv_subnet2.update(subnet: {route_table_href: $default_route_table_href})
+  @vpc_priv_subnet3.update(subnet: {route_table_href: $default_route_table_href})
   # Delete NAT GW and Elastic IP
   delete(@@vpc_nat_gw)
   sleep_until(@@vpc_nat_gw.state == "deleted")
