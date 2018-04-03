@@ -128,13 +128,13 @@ mapping "map_cloud" do {
 
 mapping "map_instancetype" do {
   "Standard Performance" => {
-    "AWS" => "m3.medium",
+    "AWS" => "t2.small",
     "AzureRM" => "D1",
     "Google" => "n1-standard-1",
     "VMware" => "small",
   },
   "High Performance" => {
-    "AWS" => "m3.large",
+    "AWS" => "t2.large",
     "AzureRM" => "D1",
     "Google" => "n1-standard-2",
     "VMware" => "large",
@@ -309,19 +309,19 @@ output "public_subnet1" do
     default_value $vpc_public_subnet1_cidr
 end
 
-output "public_subnet2" do
-    category "aws networking"
-    label "aws public subnet"
-    description "Public Subnet 2"
-    default_value $vpc_public_subnet2_cidr
-end
+#output "public_subnet2" do
+#    category "aws networking"
+#    label "aws public subnet"
+#    description "Public Subnet 2"
+#    default_value $vpc_public_subnet2_cidr
+#end
 
-output "public_subnet3" do
-    category "aws networking"
-    label "aws public subnet"
-    description "Public Subnet 3"
-    default_value $vpc_public_subnet3_cidr
-end
+#output "public_subnet3" do
+#    category "aws networking"
+#    label "aws public subnet"
+#    description "Public Subnet 3"
+#    default_value $vpc_public_subnet3_cidr
+#end
 
 output "private_subnet1" do
     category "aws networking"
@@ -330,19 +330,19 @@ output "private_subnet1" do
     default_value $vpc_private_subnet1_cidr
 end
 
-output "private_subnet2" do
-    category "aws networking"
-    label "aws private subnet"
-    description "Private Subnet 2"
-    default_value $vpc_private_subnet2_cidr
-end
+#output "private_subnet2" do
+#    category "aws networking"
+#    label "aws private subnet"
+#    description "Private Subnet 2"
+#    default_value $vpc_private_subnet2_cidr
+#end
 
-output "private_subnet3" do
-    category "aws networking"
-    label "aws private subnet"
-    description "Private Subnet 3"
-    default_value $vpc_private_subnet3_cidr
-end
+#output "private_subnet3" do
+#    category "aws networking"
+#    label "aws private subnet"
+#    description "Private Subnet 3"
+#    default_value $vpc_private_subnet3_cidr
+#end
 
 
 ### VPC ###
@@ -360,26 +360,26 @@ resource "vpc_subnet", type: "subnet" do
   cloud map($map_cloud, $param_location, "cloud")
   datacenter map($map_cloud, $param_location, "datacenter")
   network @vpc_network
-  cidr_block "10.1.0.0/24"
+  cidr_block $vpc_public_subnet1_cidr
 end
 
 # public facing subnet2
-resource "vpc_subnet2", type: "subnet" do
-    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
-    cloud map($map_cloud, $param_location, "cloud")
-    datacenter map($map_cloud, $param_location, "datacenter2")
-    network @vpc_network
-    cidr_block "10.1.1.0/24"
-end
+#resource "vpc_subnet2", type: "subnet" do
+#    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
+#    cloud map($map_cloud, $param_location, "cloud")
+#    datacenter map($map_cloud, $param_location, "datacenter2")
+#    network @vpc_network
+#    cidr_block $vpc_public_subnet2_cidr
+#end
 
 # public facing subnet3
-resource "vpc_subnet3", type: "subnet" do
-    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
-    cloud map($map_cloud, $param_location, "cloud")
-    datacenter map($map_cloud, $param_location, "datacenter3")
-    network @vpc_network
-    cidr_block "10.1.2.0/25"
-end
+#resource "vpc_subnet3", type: "subnet" do
+#    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
+#    cloud map($map_cloud, $param_location, "cloud")
+#    datacenter map($map_cloud, $param_location, "datacenter3")
+#    network @vpc_network
+#    cidr_block $vpc_public_subnet3_cidr
+#end
 
 # Internet gateway
 resource "vpc_igw", type: "network_gateway" do
@@ -410,26 +410,26 @@ resource "vpc_priv_subnet", type: "subnet" do
   cloud map($map_cloud, $param_location, "cloud")
   datacenter map($map_cloud, $param_location, "datacenter")
   network @vpc_network
-  cidr_block $vpc_public_subnet1_cidr
+  cidr_block $vpc_private_subnet1_cidr
 end
 
 # non-public facing subnet2
-resource "vpc_priv_subnet2", type: "subnet" do
-    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
-    cloud map($map_cloud, $param_location, "cloud")
-    datacenter map($map_cloud, $param_location, "datacenter2")
-    network @vpc_network
-    cidr_block $vpc_public_subnet2_cidr
-end
+#resource "vpc_priv_subnet2", type: "subnet" do
+#    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
+#    cloud map($map_cloud, $param_location, "cloud")
+#    datacenter map($map_cloud, $param_location, "datacenter2")
+#    network @vpc_network
+#    cidr_block $vpc_private_subnet2_cidr
+#end
 
 # non-public facing subnet3
-resource "vpc_priv_subnet3", type: "subnet" do
-    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
-    cloud map($map_cloud, $param_location, "cloud")
-    datacenter map($map_cloud, $param_location, "datacenter3")
-    network @vpc_network
-    cidr_block $vpc_public_subnet3_cidr
-end
+#resource "vpc_priv_subnet3", type: "subnet" do
+#    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
+#    cloud map($map_cloud, $param_location, "cloud")
+#    datacenter map($map_cloud, $param_location, "datacenter3")
+#    network @vpc_network
+#    cidr_block $vpc_private_subnet3_cidr
+#end
 
 # NAT gateway and Elastic IP
 resource "vpc_nat_ip", type: "ip_address" do
@@ -599,8 +599,8 @@ operation "start" do
 end
 
 # Create the network and related components and NAT gateway and servers and this and that.
-#define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
-define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet,  @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
+define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
+
 
    # Gettng the cloud location for the correct region plugin to call
    $$cloud_location = map($map_cloud, $param_location, "aws_region")
@@ -637,47 +637,23 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet
    if $$cloud_location == "paris"
     @@vpc_nat_gw = @vpc_nat_gw_paris
    end
-  
-  call start_debugging()
+   
   provision(@vpc_network)
-  
-  #concurrent return @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
-  concurrent return @vpc_subnet, @vpc_subnet2, @vpc_subnet3 do
-    sub on_error: stop_debugging() do
-     provision(@vpc_subnet)
-    end
-    sub on_error: stop_debugging() do
-     provision(@vpc_subnet2)
-    end
-    sub on_error: stop_debugging() do
-     provision(@vpc_subnet3)
-    end
-  end
 
-  concurrent return @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3 do
-    sub on_error: stop_debugging() do
-     provision(@vpc_priv_subnet)
-    end
-    sub on_error: stop_debugging() do
-     provision(@vpc_priv_subnet2)
-    end
-    sub on_error: stop_debugging() do
-     provision(@vpc_priv_subnet3) 
-    end
+  concurrent return @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
+    provision(@vpc_subnet)
+    #  provision(@vpc_subnet2)
+    #provision(@vpc_subnet3)
+    provision(@vpc_priv_subnet)
+    #provision(@vpc_priv_subnet2)
+    #provision(@vpc_priv_subnet3)
+    provision(@vpc_igw)
+    provision(@vpc_route_table)   
+    provision(@vpc_priv_route_table)  
   end
   
-  concurrent return @vpc_igw, @vpc_route_table, @vpc_priv_route_table do
-    sub on_error: stop_debugging() do   
-     provision(@vpc_igw)
-    end
-    sub on_error: stop_debugging() do
-     provision(@vpc_route_table) 
-    end
-    sub on_error: stop_debugging() do  
-     provision(@vpc_priv_route_table)
-    end
-  end
-  
+  provision(@vpc_route)
+
   # Provision NAT GW bits and baubles
   provision(@vpc_nat_ip)
   sleep_until(@vpc_nat_ip.address)
@@ -686,43 +662,19 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet
   call provision_route_to_nat_gw(map($map_cloud, $param_location, "cloud"), @@vpc_nat_gw, @vpc_priv_route_table)
 
   # configure the subnets to use their route tables
-  concurrent  do
-    sub on_error: stop_debugging() do
-     @vpc_subnet.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
-    end
-    sub on_error: stop_debugging() do
-     @vpc_subnet2.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
-    end
-    sub on_error: stop_debugging() do
-     @vpc_subnet3.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
-    end
-
-    sub on_error: stop_debugging() do
-     @vpc_priv_subnet.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
-    end
-    sub on_error: stop_debugging() do
-     @vpc_priv_subnet2.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
-    end
-    sub on_error: stop_debugging() do
-     @vpc_priv_subnet3.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
-    end
+  concurrent do
+    @vpc_subnet.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
+    @vpc_priv_subnet.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
   end
     
-  sub on_error: stop_debugging() do 
-   provision(@cluster_sg_rule_int_tcp)
-  end
-  sub on_error: stop_debugging() do
-   provision(@cluster_sg_rule_int_udp)
-  end
+  provision(@cluster_sg_rule_int_tcp)
+  provision(@cluster_sg_rule_int_udp)
   
-  sub on_error: stop_debugging() do
-   provision(@ssh_key)
-  end
+  provision(@ssh_key)
 
   concurrent return @pub_server, @priv_servers do
-     provision(@pub_server)
-     provision(@priv_servers)
-   call stop_debugging()
+    provision(@pub_server)
+    provision(@priv_servers)
   end
 
 end
@@ -784,8 +736,7 @@ end
 # Update some of the networking components to remove dependencies that would prevent cleaning up
 # the network.
 # Terminate the servers. We'll let auto-terminate handle the networking resources.
-#define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip do
-define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3,  @vpc_priv_subnet,  @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip do
+define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet,@vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip do
   
   # Terminate the servers in the network.
   concurrent return @pub_server, @priv_servers do
@@ -802,8 +753,7 @@ define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_sub
   $default_route_table_href = @default_route_table.href
   @vpc_subnet.update(subnet: {route_table_href: $default_route_table_href})
   @vpc_priv_subnet.update(subnet: {route_table_href: $default_route_table_href})
-  @vpc_priv_subnet2.update(subnet: {route_table_href: $default_route_table_href})
-  @vpc_priv_subnet3.update(subnet: {route_table_href: $default_route_table_href})
+  
   # Delete NAT GW and Elastic IP
   delete(@@vpc_nat_gw)
   sleep_until(@@vpc_nat_gw.state == "deleted")
@@ -845,19 +795,3 @@ define start_server(@pub_server, @priv_servers) return $pub_server_ip, @priv_ser
   @priv_servers_collection = @priv_servers
 end
 
-define start_debugging() do
-  if $$debugging == false || logic_and($$debugging != false, $$debugging != true)
-    initiate_debug_report()
-    $$debugging = true
-  end
-end
-
-define stop_debugging() do
-  if $$debugging == true
-    $debug_report = complete_debug_report()
-    call sys_log.set_task_target(@@deployment)
-    call sys_log.summary("Debug Report")
-    call sys_log.detail($debug_report)
-    $$debugging = false
-  end
-end
