@@ -671,7 +671,7 @@ operation "start" do
 end
 
 # Create the network and related components and NAT gateway and servers and this and that.
-define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
+define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_gw_tokyo, @vpc_nat_gw_singapore, @vpc_nat_gw_sydney, @vpc_nat_gw_saopaulo, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
 
 
    # Gettng the cloud location for the correct region plugin to call
@@ -712,11 +712,11 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet
    if $$cloud_location == "tokyo"
        @@vpc_nat_gw = @vpc_nat_gw_tokyo
    end
-   if $$cloud_location == "sydney"
-       @@vpc_nat_gw = @vpc_nat_gw_sydney
-   end
    if $$cloud_location == "singapore"
        @@vpc_nat_gw = @vpc_nat_gw_singapore
+   end
+   if $$cloud_location == "sydney"
+       @@vpc_nat_gw = @vpc_nat_gw_sydney
    end
    if $$cloud_location == "saopaulo"
        @@vpc_nat_gw = @vpc_nat_gw_saopaulo
@@ -830,7 +830,7 @@ end
 # Update some of the networking components to remove dependencies that would prevent cleaning up
 # the network.
 # Terminate the servers. We'll let auto-terminate handle the networking resources.
-define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet,@vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip do
+define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet,@vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_gw_tokyo, @vpc_nat_gw_singapore, @vpc_nat_gw_sydney, @vpc_nat_gw_saopaulo, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip do
   
   # Terminate the servers in the network.
   concurrent return @pub_server, @priv_servers do
