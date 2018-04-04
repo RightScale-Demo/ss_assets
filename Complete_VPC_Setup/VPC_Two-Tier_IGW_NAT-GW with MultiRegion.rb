@@ -25,6 +25,10 @@ import "plugin/rs_aws_vpc_frankfurt"
 import "plugin/rs_aws_vpc_ireland"
 import "plugin/rs_aws_vpc_london"
 import "plugin/rs_aws_vpc_paris"
+import "plugin/rs_aws_vpc_tokyo"
+import "plugin/rs_aws_vpc_singapore"
+import "plugin/rs_aws_vpc_sydney"
+import "plugin/rs_aws_vpc_saopaulo"
 
 ### Mappings ###
 mapping "map_cloud" do {
@@ -90,7 +94,7 @@ mapping "map_cloud" do {
   },
   "EU (Ireland) eu-west-1" => {
       "cloud" => "eu-west-1",
-      "datacenter" => "eu-west-1c",  # "eu-west-1b","eu-west-1a"
+      "datacenter" => "eu-west-1c",
       "datacenter2" => "eu-west-1b",
       "datacenter3" => "eu-west-1a",
       "ssh_key" => "@ssh_key",
@@ -102,7 +106,7 @@ mapping "map_cloud" do {
   },
   "EU (London) eu-west-2" => {
       "cloud" => "eu-west-2",
-      "datacenter" => "eu-west-2c", # "eu-west-2b","eu-west-2a"
+      "datacenter" => "eu-west-2c", #
       "datacenter2" => "eu-west-2b",
       "datacenter3" => "eu-west-2a",
       "ssh_key" => "@ssh_key",
@@ -114,7 +118,7 @@ mapping "map_cloud" do {
   },
   "EU (Paris) eu-west-3" => {
       "cloud" => "eu-west-3",
-      "datacenter" => "eu-west-3c", #"eu-west-3b","eu-west-3a"
+      "datacenter" => "eu-west-3c",
       "datacenter2" => "eu-west-3b",
       "datacenter3" => "eu-west-3a",
       "ssh_key" => "@ssh_key",
@@ -123,6 +127,54 @@ mapping "map_cloud" do {
       "gw" => "@vpc_igw",
       "tag_prefix" => "ec2",
       "aws_region" => "paris",
+  },
+  "Asia Pacific (Tokyo) ap-northeast-1" => {
+      "cloud" => "ap-northeast-1",
+      "datacenter" => "ap-northeast-1c",
+      "datacenter2" => "ap-northeast-1b",
+      "datacenter3" => "ap-northeast-1a",
+      "ssh_key" => "@ssh_key",
+      "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
+      "priv_subnet" => "@vpc_priv_subnet.name",
+      "gw" => "@vpc_igw",
+      "tag_prefix" => "ec2",
+      "aws_region" => "tokyo",
+  },
+  "Asia Pacific (Singapore) ap-southeast-1" => {
+      "cloud" => "ap-southeast-1",
+      "datacenter" => "ap-southeast-1c",
+      "datacenter2" => "ap-southeast-1b",
+      "datacenter3" => "ap-southeast-1a",
+      "ssh_key" => "@ssh_key",
+      "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
+      "priv_subnet" => "@vpc_priv_subnet.name",
+      "gw" => "@vpc_igw",
+      "tag_prefix" => "ec2",
+      "aws_region" => "singapore",
+  },
+  "Asia Pacific (Sydney) ap-southeast-2" => {
+      "cloud" => "ap-southeast-2",
+      "datacenter" => "ap-southeast-2c",
+      "datacenter2" => "ap-southeast-2b",
+      "datacenter3" => "ap-southeast-2a",
+      "ssh_key" => "@ssh_key",
+      "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
+      "priv_subnet" => "@vpc_priv_subnet.name",
+      "gw" => "@vpc_igw",
+      "tag_prefix" => "ec2",
+      "aws_region" => "sydney",
+  },
+  "South America (Sao Paulo) sa-east-1a" => {
+      "cloud" => "sa-east-1",
+      "datacenter" => "sa-east-1c",
+      "datacenter2" => "sa-east-1b",
+      "datacenter3" => "sa-east-1a",
+      "ssh_key" => "@ssh_key",
+      "subnet" => "@vpc_subnet.name",  # using .name since we need to use name for google
+      "priv_subnet" => "@vpc_priv_subnet.name",
+      "gw" => "@vpc_igw",
+      "tag_prefix" => "ec2",
+      "aws_region" => "saopaulo",
   }
 } end
 
@@ -173,7 +225,7 @@ parameter "param_location" do
     label "AWS Region"
     category "Deployment Options"
     description "Target AWS Region for this cluster."
-    allowed_values "US East (Ohio) us-east-2", "US East (N. Virginia) us-east-1", "US West (California) us-west-1", "US West (Oregon) us-west-2", "EU (Frankfurt) eu-central-1","EU (Ireland) eu-west-1", "EU (London) eu-west-2"#, "EU (Paris) eu-west-3"
+    allowed_values "US East (Ohio) us-east-2", "US East (N. Virginia) us-east-1", "US West (California) us-west-1", "US West (Oregon) us-west-2", "EU (Frankfurt) eu-central-1","EU (Ireland) eu-west-1", "EU (London) eu-west-2", "EU (Paris) eu-west-3", "Asia Pacific (Tokyo) ap-northeast-1", "Asia Pacific (Singapore) ap-southeast-1", "South America (Sao Paulo) sa-east-1a"
     default "US West (Oregon) us-west-2"
 end
 
@@ -477,6 +529,26 @@ resource "vpc_nat_gw_paris", type: "rs_aws_vpc_paris.nat_gateway" do
     subnet_id @vpc_subnet.resource_uid  # Sits in the public subnet but is a GW for private subnet
 end
 
+resource "vpc_nat_gw_tokyo", type: "rs_aws_vpc_tokyo.nat_gateway" do
+    allocation_id "TBD"  # RCL below sets the allocation_id for the elastic IP
+    subnet_id @vpc_subnet.resource_uid  # Sits in the public subnet but is a GW for private subnet
+end
+
+resource "vpc_nat_gw_singapore", type: "rs_aws_vpc_singapore.nat_gateway" do
+    allocation_id "TBD"  # RCL below sets the allocation_id for the elastic IP
+    subnet_id @vpc_subnet.resource_uid  # Sits in the public subnet but is a GW for private subnet
+end
+
+resource "vpc_nat_gw_sydney", type: "rs_aws_vpc_sydney.nat_gateway" do
+    allocation_id "TBD"  # RCL below sets the allocation_id for the elastic IP
+    subnet_id @vpc_subnet.resource_uid  # Sits in the public subnet but is a GW for private subnet
+end
+
+resource "vpc_nat_gw_saopaulo", type: "rs_aws_vpc_saopaulo.nat_gateway" do
+    allocation_id "TBD"  # RCL below sets the allocation_id for the elastic IP
+    subnet_id @vpc_subnet.resource_uid  # Sits in the public subnet but is a GW for private subnet
+end
+
 # Route table for the private subnet
 resource "vpc_priv_route_table", type: "route_table" do
   name join(["cat_priv_route_table_", last(split(@@deployment.href,"/"))])
@@ -637,6 +709,18 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet
    if $$cloud_location == "paris"
     @@vpc_nat_gw = @vpc_nat_gw_paris
    end
+   if $$cloud_location == "tokyo"
+       @@vpc_nat_gw = @vpc_nat_gw_tokyo
+   end
+   if $$cloud_location == "sydney"
+       @@vpc_nat_gw = @vpc_nat_gw_sydney
+   end
+   if $$cloud_location == "singapore"
+       @@vpc_nat_gw = @vpc_nat_gw_singapore
+   end
+   if $$cloud_location == "saopaulo"
+       @@vpc_nat_gw = @vpc_nat_gw_saopaulo
+   end
    
   provision(@vpc_network)
 
@@ -765,10 +849,10 @@ define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet,@vpc_priv
   @vpc_priv_subnet.update(subnet: {route_table_href: $default_route_table_href})
   
   # Removing route table from public2/3 and private2/3 subnets
-  #@vpc_subnet2.update(subnet: {route_table_href: $default_route_table_href})
-  #@vpc_subnet3.update(subnet: {route_table_href: $default_route_table_href})
-  #@vpc_priv_subnet2.update(subnet: {route_table_href: $default_route_table_href})
-  #@vpc_priv_subnet3.update(subnet: {route_table_href: $default_route_table_href})
+  @vpc_subnet2.update(subnet: {route_table_href: $default_route_table_href})
+  @vpc_subnet3.update(subnet: {route_table_href: $default_route_table_href})
+  @vpc_priv_subnet2.update(subnet: {route_table_href: $default_route_table_href})
+  @vpc_priv_subnet3.update(subnet: {route_table_href: $default_route_table_href})
   
   # Delete NAT GW and Elastic IP
   delete(@@vpc_nat_gw)
