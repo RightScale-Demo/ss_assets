@@ -214,7 +214,7 @@ end
 
 parameter "vpc_public_subnet1_cidr" do
     category "VPC Networking"
-    label "Public Subnet1 CIDR"
+    label "Public Subnet 1 CIDR"
     type "string"
     description "Please enter a cidr block for public subnet 1. Example:  10.1.0.0/24"
     default "10.1.0.0/24"
@@ -222,7 +222,7 @@ end
 
 parameter "vpc_public_subnet2_cidr" do
     category "VPC Networking"
-    label "Public Subnet2 CIDR"
+    label "Public Subnet 2 CIDR"
     type "string"
     description "Please enter a cidr block for public subnet 2. Example:  10.1.1.0/24"
     default "10.1.1.0/24"
@@ -230,7 +230,7 @@ end
 
 parameter "vpc_public_subnet3_cidr" do
     category "VPC Networking"
-    label "Public Subnet3 CIDR"
+    label "Public Subnet 3 CIDR"
     type "string"
     description "Please enter a cidr block for public subnet 3. Example:  10.1.2.0/25"
     default "10.1.2.0/25"
@@ -238,7 +238,7 @@ end
 
 parameter "vpc_private_subnet1_cidr" do
     category "VPC Networking"
-    label "Private Subnet1 CIDR"
+    label "Private Subnet 1 CIDR"
     type "string"
     description "Please enter a cidr block for private subnet 1. Example:  10.1.2.128/25"
     default "10.1.2.128/25"
@@ -246,7 +246,7 @@ end
 
 parameter "vpc_private_subnet2_cidr" do
     category "VPC Networking"
-    label "Private Subnet2 CIDR"
+    label "Private Subnet 2 CIDR"
     type "string"
     description "Please enter a cidr block for private subnet 2. Example:  10.1.3.0/25"
     default "10.1.3.0/25"
@@ -254,7 +254,7 @@ end
 
 parameter "vpc_private_subnet3_cidr" do
     category "VPC Networking"
-    label "Private Subnet3 CIDR"
+    label "Private Subnet 3 CIDR"
     type "string"
     description "Please enter a cidr block for private subnet 3. Example:  10.1.3.128/25"
     default "10.1.3.128/25"
@@ -309,19 +309,19 @@ output "public_subnet1" do
     default_value $vpc_public_subnet1_cidr
 end
 
-#output "public_subnet2" do
-#    category "aws networking"
-#    label "aws public subnet"
-#    description "Public Subnet 2"
-#    default_value $vpc_public_subnet2_cidr
-#end
+output "public_subnet2" do
+    category "aws networking"
+    label "aws public subnet 2"
+    description "Public Subnet 2"
+    default_value $vpc_public_subnet2_cidr
+end
 
-#output "public_subnet3" do
-#    category "aws networking"
-#    label "aws public subnet"
-#    description "Public Subnet 3"
-#    default_value $vpc_public_subnet3_cidr
-#end
+output "public_subnet3" do
+    category "aws networking"
+    label "aws public subnet 3"
+    description "Public Subnet 3"
+    default_value $vpc_public_subnet3_cidr
+end
 
 output "private_subnet1" do
     category "aws networking"
@@ -364,22 +364,22 @@ resource "vpc_subnet", type: "subnet" do
 end
 
 # public facing subnet2
-#resource "vpc_subnet2", type: "subnet" do
-#    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
-#    cloud map($map_cloud, $param_location, "cloud")
-#    datacenter map($map_cloud, $param_location, "datacenter2")
-#    network @vpc_network
-#    cidr_block $vpc_public_subnet2_cidr
-#end
+resource "vpc_subnet2", type: "subnet" do
+    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
+    cloud map($map_cloud, $param_location, "cloud")
+    datacenter map($map_cloud, $param_location, "datacenter2")
+    network @vpc_network
+    cidr_block $vpc_public_subnet2_cidr
+end
 
 # public facing subnet3
-#resource "vpc_subnet3", type: "subnet" do
-#    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
-#    cloud map($map_cloud, $param_location, "cloud")
-#    datacenter map($map_cloud, $param_location, "datacenter3")
-#    network @vpc_network
-#    cidr_block $vpc_public_subnet3_cidr
-#end
+resource "vpc_subnet3", type: "subnet" do
+    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
+    cloud map($map_cloud, $param_location, "cloud")
+    datacenter map($map_cloud, $param_location, "datacenter3")
+    network @vpc_network
+    cidr_block $vpc_public_subnet3_cidr
+end
 
 # Internet gateway
 resource "vpc_igw", type: "network_gateway" do
@@ -599,7 +599,7 @@ operation "start" do
 end
 
 # Create the network and related components and NAT gateway and servers and this and that.
-define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
+define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
 
 
    # Gettng the cloud location for the correct region plugin to call
@@ -612,7 +612,7 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
     $$myplugin_region_gateway = $$myplugin_region + ".nat_gateway"
     # i.e. makes $$myplugin_region_gateway =  "rs_aws_vpc_oregon.nat_gateway"
     
-
+    # Nat Gateway has to call the correct resource pool.  To do that, we have to made it global and assigned it the correct one.
    if $$cloud_location == "ohio"
     @@vpc_nat_gw = @vpc_nat_gw_ohio
    end
@@ -640,10 +640,10 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
    
   provision(@vpc_network)
 
-  concurrent return @vpc_subnet, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
+  concurrent return @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
     provision(@vpc_subnet)
-    #provision(@vpc_subnet2)
-    #provision(@vpc_subnet3)
+    provision(@vpc_subnet2)
+    provision(@vpc_subnet3)
     provision(@vpc_priv_subnet)
     provision(@vpc_priv_subnet2)
     provision(@vpc_priv_subnet3)
@@ -663,9 +663,17 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
 
   # configure the subnets to use their route tables
   concurrent do
+    #public subnet 1 route table update
     @vpc_subnet.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
+    #public subnet 2 route table update
+    @vpc_subnet2.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
+    #public subnet 3 route table update
+    @vpc_subnet3.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
+    #private subnet 1 route table update
     @vpc_priv_subnet.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
+    #private subnet 2 route table update
     @vpc_priv_subnet2.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
+    #private subnet 3 route table update
     @vpc_priv_subnet3.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
   end
     
@@ -755,6 +763,10 @@ define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet,@vpc_priv
   $default_route_table_href = @default_route_table.href
   @vpc_subnet.update(subnet: {route_table_href: $default_route_table_href})
   @vpc_priv_subnet.update(subnet: {route_table_href: $default_route_table_href})
+  
+  # Removing route table from public2/3 and private2/3 subnets
+  #@vpc_subnet2.update(subnet: {route_table_href: $default_route_table_href})
+  #@vpc_subnet3.update(subnet: {route_table_href: $default_route_table_href})
   #@vpc_priv_subnet2.update(subnet: {route_table_href: $default_route_table_href})
   #@vpc_priv_subnet3.update(subnet: {route_table_href: $default_route_table_href})
   
