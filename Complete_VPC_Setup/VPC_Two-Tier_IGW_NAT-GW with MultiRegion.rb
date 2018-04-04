@@ -173,7 +173,7 @@ parameter "param_location" do
     label "AWS Region"
     category "Deployment Options"
     description "Target AWS Region for this cluster."
-    allowed_values "US East (Ohio) us-east-2", "US East (N. Virginia) us-east-1", "US West (California) us-west-1", "US West (Oregon) us-west-2", "EU (Frankfurt) eu-central-1","EU (Ireland) eu-west-1", "EU (London) eu-west-2", "EU (Paris) eu-west-3"
+    allowed_values "US East (Ohio) us-east-2", "US East (N. Virginia) us-east-1", "US West (California) us-west-1", "US West (Oregon) us-west-2", "EU (Frankfurt) eu-central-1","EU (Ireland) eu-west-1", "EU (London) eu-west-2"#, "EU (Paris) eu-west-3"
     default "US West (Oregon) us-west-2"
 end
 
@@ -330,12 +330,12 @@ output "private_subnet1" do
     default_value $vpc_private_subnet1_cidr
 end
 
-#output "private_subnet2" do
-#    category "aws networking"
-#    label "aws private subnet"
-#    description "Private Subnet 2"
-#    default_value $vpc_private_subnet2_cidr
-#end
+output "private_subnet2" do
+    category "aws networking"
+    label "aws private subnet"
+    description "Private Subnet 2"
+    default_value $vpc_private_subnet2_cidr
+end
 
 #output "private_subnet3" do
 #    category "aws networking"
@@ -414,13 +414,12 @@ resource "vpc_priv_subnet", type: "subnet" do
 end
 
 # non-public facing subnet2
-#resource "vpc_priv_subnet2", type: "subnet" do
-#    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
-#    cloud map($map_cloud, $param_location, "cloud")
-#    datacenter map($map_cloud, $param_location, "datacenter2")
-#    network @vpc_network
-#    cidr_block $vpc_private_subnet2_cidr
-#end
+resource "vpc_priv_subnet2", type: "subnet" do
+    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
+    cloud map($map_cloud, $param_location, "cloud")#    datacenter map($map_cloud, $param_location, "datacenter2")
+    network @vpc_network
+    cidr_block $vpc_private_subnet2_cidr
+end
 
 # non-public facing subnet3
 #resource "vpc_priv_subnet3", type: "subnet" do
@@ -599,7 +598,7 @@ operation "start" do
 end
 
 # Create the network and related components and NAT gateway and servers and this and that.
-define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
+define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key, $param_location, $map_cloud, $map_config, $map_image_name_root) return @pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_subnet, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip, @vpc_route_table, @vpc_route, @vpc_priv_route_table, @cluster_sg, @cluster_sg_rule_int_tcp, @cluster_sg_rule_int_udp, @ssh_key do
 
 
    # Gettng the cloud location for the correct region plugin to call
@@ -640,12 +639,12 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
    
   provision(@vpc_network)
 
-  concurrent return @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
+  concurrent return @vpc_subnet, @vpc_priv_subnet, @vpc_priv_subnet2, @vpc_igw, @vpc_route_table, @vpc_priv_route_table  do
     provision(@vpc_subnet)
-    #  provision(@vpc_subnet2)
+    #provision(@vpc_subnet2)
     #provision(@vpc_subnet3)
     provision(@vpc_priv_subnet)
-    #provision(@vpc_priv_subnet2)
+    provision(@vpc_priv_subnet2)
     #provision(@vpc_priv_subnet3)
     provision(@vpc_igw)
     provision(@vpc_route_table)   
@@ -665,6 +664,7 @@ define launch(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_priv_s
   concurrent do
     @vpc_subnet.update(subnet: {route_table_href: to_s(@vpc_route_table.href)})
     @vpc_priv_subnet.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
+    @vpc_priv_subnet2.update(subnet: {route_table_href: to_s(@vpc_priv_route_table.href)})
   end
     
   provision(@cluster_sg_rule_int_tcp)
@@ -753,6 +753,7 @@ define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet,@vpc_priv
   $default_route_table_href = @default_route_table.href
   @vpc_subnet.update(subnet: {route_table_href: $default_route_table_href})
   @vpc_priv_subnet.update(subnet: {route_table_href: $default_route_table_href})
+  @vpc_priv_subnet2.update(subnet: {route_table_href: $default_route_table_href})
   
   # Delete NAT GW and Elastic IP
   delete(@@vpc_nat_gw)
