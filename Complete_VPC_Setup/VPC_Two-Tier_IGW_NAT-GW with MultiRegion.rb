@@ -417,7 +417,7 @@ end
 
 # public facing subnet2
 resource "vpc_subnet2", type: "subnet" do
-    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
+    name join(["cat_subnet2_", last(split(@@deployment.href,"/"))])
     cloud map($map_cloud, $param_location, "cloud")
     datacenter map($map_cloud, $param_location, "datacenter2")
     network @vpc_network
@@ -426,7 +426,7 @@ end
 
 # public facing subnet3
 resource "vpc_subnet3", type: "subnet" do
-    name join(["cat_subnet_", last(split(@@deployment.href,"/"))])
+    name join(["cat_subnet3_", last(split(@@deployment.href,"/"))])
     cloud map($map_cloud, $param_location, "cloud")
     datacenter map($map_cloud, $param_location, "datacenter3")
     network @vpc_network
@@ -467,7 +467,7 @@ end
 
 # non-public facing subnet2
 resource "vpc_priv_subnet2", type: "subnet" do
-    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
+    name join(["cat_priv_subnet2_", last(split(@@deployment.href,"/"))])
     cloud map($map_cloud, $param_location, "cloud")
     datacenter map($map_cloud, $param_location, "datacenter2")
     network @vpc_network
@@ -476,7 +476,7 @@ end
 
 # non-public facing subnet3
 resource "vpc_priv_subnet3", type: "subnet" do
-    name join(["cat_priv_subnet_", last(split(@@deployment.href,"/"))])
+    name join(["cat_priv_subnet3_", last(split(@@deployment.href,"/"))])
     cloud map($map_cloud, $param_location, "cloud")
     datacenter map($map_cloud, $param_location, "datacenter3")
     network @vpc_network
@@ -848,9 +848,7 @@ define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_sub
   @vpc_subnet.update(subnet: {route_table_href: $default_route_table_href})
   @vpc_priv_subnet.update(subnet: {route_table_href: $default_route_table_href})
   
-  # Removing route table from public2/3 and private2/3 subnets
-  @vpc_subnet2.update(subnet: {route_table_href: $default_route_table_href})
-  @vpc_subnet3.update(subnet: {route_table_href: $default_route_table_href})
+  # Removing route table from private2/3 subnets
   @vpc_priv_subnet2.update(subnet: {route_table_href: $default_route_table_href})
   @vpc_priv_subnet3.update(subnet: {route_table_href: $default_route_table_href})
   
