@@ -830,7 +830,7 @@ end
 # Update some of the networking components to remove dependencies that would prevent cleaning up
 # the network.
 # Terminate the servers. We'll let auto-terminate handle the networking resources.
-define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet,@vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_gw_tokyo, @vpc_nat_gw_singapore, @vpc_nat_gw_sydney, @vpc_nat_gw_saopaulo, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @@vpc_nat_gw, @vpc_nat_ip do
+define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet,@vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_gw_tokyo, @vpc_nat_gw_singapore, @vpc_nat_gw_sydney, @vpc_nat_gw_saopaulo, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @vpc_nat_ip do
   
   # Terminate the servers in the network.
   concurrent return @pub_server, @priv_servers do
@@ -848,9 +848,12 @@ define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_sub
   @vpc_subnet.update(subnet: {route_table_href: $default_route_table_href})
   @vpc_priv_subnet.update(subnet: {route_table_href: $default_route_table_href})
   
-  # Removing route table from private2/3 subnets
+  # Removing route table to NAT from private2/3 subnets. Point to default route table
   @vpc_priv_subnet2.update(subnet: {route_table_href: $default_route_table_href})
   @vpc_priv_subnet3.update(subnet: {route_table_href: $default_route_table_href})
+  # Removing route table to NAT from public2/3 subnets. Point to default route table
+  @vpc_subnet2.update(subnet: {route_table_href: $default_route_table_href})
+  @vpc_subnet3.update(subnet: {route_table_href: $default_route_table_href})
   
   # Delete NAT GW and Elastic IP
   delete(@@vpc_nat_gw)
