@@ -830,7 +830,7 @@ end
 # Update some of the networking components to remove dependencies that would prevent cleaning up
 # the network.
 # Terminate the servers. We'll let auto-terminate handle the networking resources.
-define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet,@vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_gw_tokyo, @vpc_nat_gw_singapore, @vpc_nat_gw_sydney, @vpc_nat_gw_saopaulo, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @vpc_nat_ip do
+define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_subnet2, @vpc_subnet3, @vpc_priv_subnet,@vpc_priv_subnet2, @vpc_priv_subnet3, @vpc_igw, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_gw_tokyo, @vpc_nat_gw_singapore, @vpc_nat_gw_sydney, @vpc_nat_gw_saopaulo, @vpc_nat_ip, $param_location) return @pub_server, @priv_servers, @vpc_igw, @vpc_nat_ip, @vpc_nat_gw_ohio, @vpc_nat_gw_oregon, @vpc_nat_gw_california, @vpc_nat_gw_oregon,@vpc_nat_gw_virginia, @vpc_nat_gw_frankfurt, @vpc_nat_gw_ireland, @vpc_nat_gw_london, @vpc_nat_gw_paris, @vpc_nat_gw_tokyo, @vpc_nat_gw_singapore, @vpc_nat_gw_sydney, @vpc_nat_gw_saopaulo do
   
   # Terminate the servers in the network.
   concurrent return @pub_server, @priv_servers do
@@ -854,10 +854,63 @@ define terminate(@pub_server, @priv_servers, @vpc_network, @vpc_subnet, @vpc_sub
   # Removing route table to NAT from public2/3 subnets. Point to default route table
   @vpc_subnet2.update(subnet: {route_table_href: $default_route_table_href})
   @vpc_subnet3.update(subnet: {route_table_href: $default_route_table_href})
+  ##
   
+  # Delete NAT GW
+  if $$cloud_location == "ohio"
+      delete(@vpc_nat_gw_ohio)
+      sleep_until(@vpc_nat_gw_ohio.state == "deleted")
+  end
+  if $$cloud_location == "oregon"
+      delete(@vpc_nat_gw_oregon)
+      sleep_until(@vpc_nat_gw_oregon.state == "deleted")
+  end
+  if $$cloud_location == "virginia"
+      delete(@vpc_nat_gw_virginia)
+      sleep_until(@vpc_nat_gw_virginiastate == "deleted")
+  end
+  if $$cloud_location == "california"
+      delete(@vpc_nat_gw_california)
+      sleep_until(@vpc_nat_gw_california.state == "deleted")
+  end
+  if $$cloud_location == "frankfurt"
+      delete(@vpc_nat_gw_frankfurt)
+      sleep_until(@vpc_nat_gw_frankfurt.state == "deleted")
+  end
+  if $$cloud_location == "ireland"
+      delete(@vpc_nat_gw_ireland)
+      sleep_until(@vpc_nat_gw_ireland.state == "deleted")
+  end
+  if $$cloud_location == "london"
+      delete(@vpc_nat_gw_london)
+      sleep_until(@vpc_nat_gw_london.state == "deleted")
+  end
+  if $$cloud_location == "paris"
+      delete(@vpc_nat_gw_paris)
+      sleep_until(@vpc_nat_gw_paris.state == "deleted")
+  end
+  if $$cloud_location == "tokyo"
+      delete(@vpc_nat_gw_tokyo)
+      sleep_until(@vpc_nat_gw_tokyo.state == "deleted")
+  end
+  if $$cloud_location == "singapore"
+      delete(@vpc_nat_gw_singapore)
+      sleep_until(@vpc_nat_gw_singapore.state == "deleted")
+  end
+  if $$cloud_location == "sydney"
+      delete(@vpc_nat_gw_sydney)
+      sleep_until(@vpc_nat_gw_sydney.state == "deleted")
+  end
+  if $$cloud_location == "saopaulo"
+      delete(@vpc_nat_gw_saopaulo)
+      sleep_until(@vpc_nat_gw_saopaulo.state == "deleted")
+  end
+
+  ##
   # Delete NAT GW and Elastic IP
-  delete(@@vpc_nat_gw)
-  sleep_until(@@vpc_nat_gw.state == "deleted")
+  #delete(@@vpc_nat_gw)
+  #sleep_until(@@vpc_nat_gw.state == "deleted")
+  # Delete NAT Elastic IP
   delete(@vpc_nat_ip)
   
   # Remove IGW reference to the VPC and delete the IGW
