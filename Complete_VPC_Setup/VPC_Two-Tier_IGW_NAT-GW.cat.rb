@@ -448,7 +448,12 @@ end
 define stop_server() do
   @@deployment.servers().current_instance().stop()
   $wake_condition = "/^(provisioned)$/"
-  sleep_until all?(@@deployment.servers().current_instance().state[], $wake_condition)
+  
+  # Sometimes there's a race condition where the instance is no longer found.
+  # But that's because it was stopped. So don't fret about about it and move on.
+  sub on_error: skip do
+    sleep_until all?(@@deployment.servers().current_instance().state[], $wake_condition)
+  end
 end
 
 define start_server(@pub_server, @priv_servers) return $pub_server_ip, @priv_servers_collection, $priv_servers_ips do
