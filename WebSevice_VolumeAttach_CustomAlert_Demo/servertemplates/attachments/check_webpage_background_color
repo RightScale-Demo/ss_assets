@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# This is a shell script that returns a 1 if it detects the file at /var/www/html/index.html is using backgroung color of purple.
+# It returns 0 otherwise.
+# It is an attachment to the rightscript that installs the monitor.
+
+# Check inputs
+if [ $# -ne 2 ]
+then
+    echo "USAGE: $0 SERVER_UUID HTML_FILE_PATH"
+    exit 1
+fi
+
+# Every 20 seconds check if the site has the expected text
+while sleep 20
+do
+    currtime=`date +%s`
+    FOUND=0
+
+    # Check if bad color is being used
+    index_file="${2}"
+    bad_color="purple"
+    grep "background-color" ${index_file} | grep ${bad_color} > /dev/null
+    if [ $? -eq 0 ]
+    then
+      # Found bad color
+      FOUND=1
+    fi
+
+    echo "PUTVAL ${1}/web_page/gauge-BadBackgroundColor ${currtime}:$FOUND"
+done
