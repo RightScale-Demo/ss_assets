@@ -470,7 +470,7 @@ mapping "map_cloud" do {
   "AWS" => {
     "cloud" => "EC2 us-west-2",
     "zone" => "us-west-2c", 
-    "zone_href" => "ZONE HREF"
+    "zone_href" => "/api/clouds/6/datacenters/8O7VCSP1D5D2E",
     "instance_type" => "m3.medium",
     "sg" => '@sec_group',  
     "ssh_key" => null,
@@ -478,7 +478,7 @@ mapping "map_cloud" do {
     "subnet" => null,
     "mci_mapping" => "Public",
     "tag_prefix" => "ec2",
-    "vol_type_href" => "VOLUME TYPE HREF", # standard
+    "vol_type_href" => "/api/clouds/6/volume_types/A09NIP4AOK9S7", # standard
     "vol_device" => "/dev/sdf",
     "restore_vol_device" => "/dev/sdg",
     "disk_device" => "/dev/xvdf",
@@ -501,12 +501,12 @@ mapping "map_cloud" do {
     "restore_vol_device" => "02",
     "disk_device" => "/dev/sdc",
     "restore_disk_device" => "/dev/sdd",
-    "pg_href" => "PLACEMENT GROUP HREF"
+    "pg_href" => "/api/placement_groups/7MD8QAPR818CE"
   },
   "Google" => {
     "cloud" => "Google",
     "zone" => "us-central1-c", # launches in Google require a zone
-    "zone_href" => "ZONE HREF"
+    "zone_href" => "/api/clouds/2175/datacenters/DPA1NPABU1JFU",
     "instance_type" => "n1-standard-2",
     "sg" => '@sec_group',  
     "ssh_key" => null,
@@ -514,7 +514,7 @@ mapping "map_cloud" do {
     "subnet" => null,
     "mci_mapping" => "Public",
     "tag_prefix" => "google",
-    "vol_type_href" => "VOLUME TYPE HREF", # pd-standard
+    "vol_type_href" => "/api/clouds/2175/volume_types/A77J97T91D9KU", # pd-standard
     "vol_device" => "persistent-disk-1",
     "restore_vol_device" => "persistent-disk-2",
     "disk_device" => "/dev/sdb",

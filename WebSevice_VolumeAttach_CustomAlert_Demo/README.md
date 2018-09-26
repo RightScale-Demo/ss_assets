@@ -15,8 +15,12 @@
 ## Self Service Set Up
 * Update the CAT file as follows:
 ** Near line 469 find the "map_cloud" structure.
-** Change the zone_href and vol_type_href for AWS and Google to the use the applicable hrefs from the account you are setting up.
-** Change the pg_href for AzureRM to use a placement group (aka storage account) you want to use.
+** For AWS and Google, change the "zone" and "zone_href" to reference the zone you want to use.
+*** This can be found in Cloud Management UI under the Clouds menu for the given cloud(s).
+** For AWS and Google, change the "vol_type_href" to the use the applicable hrefs from the account you are setting up.
+*** This can be found in Cloud Management UI under the Clouds menu for the given cloud(s).
+** For AzureRM, change the pg_href for AzureRM to use a placement group (aka storage account) you want to use.
+*** This can be created/found in Cloud Management UI under the Clouds menu for the given cloud(s).
 * Push the CAT file into the account 
 
 ## Demo Notes
